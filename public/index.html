@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <!-- Uygulama gibi davransın: iki parmakla sayfa yakınlaştırma kapalı -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#020409" />
+    <title>%WEB_TITLE%</title>
+    <style id="expo-reset">
+      html,
+      body {
+        height: 100%;
+        /* Yalnızca kaydırma: tarayıcının iki parmak yakınlaştırması devre dışı */
+        touch-action: pan-x pan-y;
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        overflow: hidden;
+        overscroll-behavior: none;
+        background: #020409;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+    <script>
+      // iOS Safari "user-scalable=no" ayarını yok sayar; iki parmak hareketini burada durdur
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) {
+        document.addEventListener(t, function (e) { e.preventDefault(); }, { passive: false });
+      });
+    </script>
+  </head>
+
+  <body>
+    <noscript>Bu uygulamayı kullanmak için JavaScript'i etkinleştirin.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

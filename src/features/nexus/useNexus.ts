@@ -1,0 +1,24 @@
+import { useMemo } from 'react';
+import { useNexusSettings } from './NexusProvider';
+import { isDay, type NexusSettings } from './settings';
+import { paletteFor, THEMES, windshieldPalette, type NexusPalette, type NexusTheme } from './themes';
+
+export interface NexusCtx {
+  nx: NexusSettings;
+  theme: NexusTheme;
+  /** Kokpit paleti */
+  pal: NexusPalette;
+  /** Cam modu paleti (saf siyah, yüksek kontrast) */
+  wpal: NexusPalette;
+  day: boolean;
+  update: (patch: Partial<NexusSettings>) => void;
+}
+
+export function useNexus(): NexusCtx {
+  const { nx, update } = useNexusSettings();
+  const theme = THEMES[nx.theme];
+  const day = isDay(nx.dayNight);
+  const pal = useMemo(() => paletteFor(theme, day, nx.accent), [theme, day, nx.accent]);
+  const wpal = useMemo(() => windshieldPalette(theme, day, nx.accent), [theme, day, nx.accent]);
+  return { nx, theme, pal, wpal, day, update };
+}
