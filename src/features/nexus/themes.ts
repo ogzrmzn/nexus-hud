@@ -8,10 +8,11 @@ import type { NexusThemeId } from './settings';
 /** Hız göstergesinin geometrisi */
 export type GaugeKind =
   | 'blade' // Prism Blade: kavisli 24 segmentlik bıçak + üstte yön şeridi
-  | 'core' // Octa-Core: sayıyı saran sekizgen çerdeğin kenarları dolar
   | 'orbit' // Yörünge: 270° çanak yay, üzerinde kayan parçacık
-  | 'horizon' // Ufuk: ekran boyu ince çizgi hızla kalınlaşır, çerçeve yok
-  | 'warp'; // Warp: ufka daralan perspektif şeritler
+  | 'warp' // Warp: ufka daralan perspektif şeritler
+  | 'streak' // Lightspeed: merkezden dışa akan yıldız çizgileri + açılan ışık yayı
+  | 'tunnel' // Tachyon: size doğru akan tünel halkaları
+  | 'road'; // Neon Highway: perspektifli yol ızgarası, akan şerit çizgileri
 
 /** Kokpit veri yerleşimi */
 export type DataLayout = 'rail' | 'grid' | 'columns' | 'strip' | 'band';
@@ -65,17 +66,6 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     night: { ...base, bg: '#020409', text: '#E8FBFF', primary: '#22D3FF', secondary: '#19F5D0', holo: '#9B6BFF', dim: '#4A6478', glass: 'rgba(34,211,255,0.06)' },
     day: { ...base, bg: '#050A12', text: '#FFFFFF', primary: '#4FE3FF', secondary: '#3DFFE0', holo: '#B795FF', dim: '#7E98AC', glass: 'rgba(79,227,255,0.10)' },
   },
-  cyber: {
-    id: 'cyber',
-    name: 'Cyber Core',
-    tagline: 'Sekizgen çekirdek · terminal veri ızgarası',
-    gauge: 'core',
-    layout: 'grid',
-    glyph: 'segment',
-    chamfer: 0,
-    night: { ...base, bg: '#010605', text: '#D9FFF6', primary: '#00F0C8', secondary: '#00B3FF', holo: '#C04BFF', dim: '#2F5E57', glass: 'rgba(0,240,200,0.06)' },
-    day: { ...base, bg: '#03100E', text: '#FFFFFF', primary: '#3CFFDA', secondary: '#38C6FF', holo: '#D47CFF', dim: '#6FA79D', glass: 'rgba(60,255,218,0.10)' },
-  },
   quantum: {
     id: 'quantum',
     name: 'Quantum',
@@ -86,17 +76,6 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     chamfer: 22,
     night: { ...base, bg: '#04030B', text: '#F1EDFF', primary: '#8FA8FF', secondary: '#7DF9FF', holo: '#B07CFF', dim: '#544C7A', glass: 'rgba(176,124,255,0.07)' },
     day: { ...base, bg: '#0A0818', text: '#FFFFFF', primary: '#AFC1FF', secondary: '#9BFBFF', holo: '#C9A3FF', dim: '#8A82B4', glass: 'rgba(176,124,255,0.12)' },
-  },
-  darkmatter: {
-    id: 'darkmatter',
-    name: 'Dark Matter',
-    tagline: 'Negatif alan · ufuk çizgisi · tek satır veri',
-    gauge: 'horizon',
-    layout: 'strip',
-    glyph: 'mono',
-    chamfer: 4,
-    night: { ...base, bg: '#000000', text: '#C9D6E8', primary: '#5B8CFF', secondary: '#3FD4E6', holo: '#6E4BD8', dim: '#2A3346', glass: 'rgba(91,140,255,0.04)' },
-    day: { ...base, bg: '#020306', text: '#FFFFFF', primary: '#7FA6FF', secondary: '#5FE6F5', holo: '#8E6BFF', dim: '#5D6A86', glass: 'rgba(127,166,255,0.08)' },
   },
   hyperdrive: {
     id: 'hyperdrive',
@@ -109,7 +88,54 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     night: { ...base, bg: '#03020A', text: '#FFFFFF', primary: '#2BE7FF', secondary: '#FFFFFF', holo: '#C054FF', dim: '#4B3F6E', glass: 'rgba(192,84,255,0.08)' },
     day: { ...base, bg: '#08061A', text: '#FFFFFF', primary: '#5CF0FF', secondary: '#FFFFFF', holo: '#D485FF', dim: '#8379A8', glass: 'rgba(192,84,255,0.13)' },
   },
+  lightspeed: {
+    id: 'lightspeed',
+    name: 'Lightspeed',
+    tagline: 'Yıldız akışı · açılan ışık yayı · terminal ızgarası',
+    gauge: 'streak',
+    layout: 'grid',
+    glyph: 'mono',
+    chamfer: 6,
+    night: { ...base, bg: '#02040C', text: '#F2FAFF', primary: '#7FD6FF', secondary: '#FFFFFF', holo: '#8A7BFF', dim: '#4A5A78', glass: 'rgba(127,214,255,0.06)' },
+    day: { ...base, bg: '#060A18', text: '#FFFFFF', primary: '#A6E4FF', secondary: '#FFFFFF', holo: '#A99DFF', dim: '#8494B4', glass: 'rgba(166,228,255,0.11)' },
+  },
+  tachyon: {
+    id: 'tachyon',
+    name: 'Tachyon',
+    tagline: 'Tünel halkaları · segment rakam · tek satır veri',
+    gauge: 'tunnel',
+    layout: 'strip',
+    glyph: 'segment',
+    chamfer: 2,
+    night: { ...base, bg: '#05020C', text: '#EAFDFF', primary: '#00E5FF', secondary: '#FF5BE1', holo: '#A24BFF', dim: '#4D3F6A', glass: 'rgba(0,229,255,0.06)' },
+    day: { ...base, bg: '#0B061A', text: '#FFFFFF', primary: '#4DF0FF', secondary: '#FF8AEA', holo: '#BE7DFF', dim: '#887AA8', glass: 'rgba(77,240,255,0.11)' },
+  },
+  neon: {
+    id: 'neon',
+    name: 'Neon Highway',
+    tagline: 'Neon yol ızgarası · akan şeritler · üst HUD bandı',
+    gauge: 'road',
+    layout: 'band',
+    glyph: 'italic',
+    chamfer: 12,
+    night: { ...base, bg: '#040312', text: '#FFFFFF', primary: '#19F5D0', secondary: '#4F8BFF', holo: '#C054FF', dim: '#45407A', glass: 'rgba(25,245,208,0.06)' },
+    day: { ...base, bg: '#0A0820', text: '#FFFFFF', primary: '#5CFFE2', secondary: '#7FAAFF', holo: '#D485FF', dim: '#837DB8', glass: 'rgba(92,255,226,0.11)' },
+  },
 };
+
+/**
+ * Menü ekranları (başlangıç, temalar, ayarlar, kontrol paneli) için daha açık palet:
+ * HUD göstergesi karanlık kalır, menüler okunaklı ve ferah görünür.
+ */
+export function uiPalette(p: NexusPalette): NexusPalette {
+  return {
+    ...p,
+    bg: '#0E1626',
+    text: '#FFFFFF',
+    dim: '#A9BCCF',
+    glass: 'rgba(120,190,255,0.10)',
+  };
+}
 
 /** Kullanıcının seçebileceği vurgu renkleri */
 export const ACCENTS: { name: string; color: string }[] = [

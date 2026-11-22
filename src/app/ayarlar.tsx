@@ -2,8 +2,8 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { HudButton, NxLabel, NxSwitch, Panel, Segmented } from '@/components/nexus/primitives';
-import { DEFAULT_NEXUS, type DayNight, type WidgetKey } from '@/features/nexus/settings';
+import { HudButton, NxLabel, NxSwitch, OptionCards, Panel, Segmented, Stepper } from '@/components/nexus/primitives';
+import { ALERT_MAX, ALERT_STEP, DEFAULT_NEXUS, type CamLayout, type DayNight, type Orientation, type WidgetKey } from '@/features/nexus/settings';
 import { alpha, type NexusPalette } from '@/features/nexus/themes';
 import { useNexus } from '@/features/nexus/useNexus';
 
@@ -61,10 +61,9 @@ function Field({ label, pal, children }: { label: string; pal: NexusPalette; chi
 }
 
 export default function NexusSettingsScreen() {
-  const { nx, pal, theme, update } = useNexus();
+  const { nx, upal: pal, theme, update } = useNexus();
   const insets = useSafeAreaInsets();
 
-  const alertOpts = nx.unit === 'mph' ? [0, 30, 50, 65, 80] : [0, 50, 90, 110, 130];
 
   return (
     <View style={{ flex: 1, backgroundColor: pal.bg }}>
@@ -108,6 +107,17 @@ export default function NexusSettingsScreen() {
               ]}
             />
           </Field>
+          <Field pal={pal} label="KOKPİT EKRAN YÖNÜ (KİLİTLİ)">
+            <Segmented<Orientation>
+              pal={pal}
+              value={nx.cockpitOrientation}
+              onChange={(v) => update({ cockpitOrientation: v })}
+              options={[
+                { value: 'dikey', label: 'DİKEY' },
+                { value: 'yatay', label: 'YATAY' },
+              ]}
+            />
+          </Field>
           <Field pal={pal} label="ANİMASYON">
             <Segmented
               pal={pal}
@@ -134,19 +144,53 @@ export default function NexusSettingsScreen() {
             />
           </Field>
           <Field pal={pal} label="HIZ UYARISI">
-            <Segmented<number>
+            <Stepper
               pal={pal}
-              value={nx.speedAlert}
-              onChange={(v) => update({ speedAlert: v })}
-              options={alertOpts.map((v) => ({ value: v, label: v === 0 ? 'KAPALI' : String(v) }))}
+              value={nx.speedAlert === 0 ? 'KAPALI' : `${nx.speedAlert} ${nx.unit === 'mph' ? 'MPH' : 'KM/H'}`}
+              minusDisabled={nx.speedAlert <= 0}
+              plusDisabled={nx.speedAlert >= ALERT_MAX}
+              onMinus={() => update({ speedAlert: Math.max(0, nx.speedAlert - ALERT_STEP) })}
+              onPlus={() => update({ speedAlert: Math.min(ALERT_MAX, nx.speedAlert + ALERT_STEP) })}
             />
           </Field>
         </Section>
 
         <Section pal={pal} chamfer={theme.chamfer} title="WINDSHIELD HUD">
-          <Row pal={pal} label="Ayna görüntü" hint="Cama yansıyan görüntü düz okunsun diye sağ-sol çevrilir">
-            <NxSwitch pal={pal} value={nx.mirror} onChange={(v) => update({ mirror: v })} />
-          </Row>
+          <Field pal={pal} label="EKRAN İÇERİĞİ">
+            <OptionCards<CamLayout>
+              pal={pal}
+              value={nx.camLayout}
+              onChange={(v) => update({ camLayout: v })}
+              options={[
+                { value: 'hiz', label: 'HIZ', icon: 'speedometer' },
+                { value: 'saat', label: 'HIZ + SAAT', icon: 'clock-outline' },
+                { value: 'yolculuk', label: 'YOLCULUK', icon: 'map-marker-distance' },
+              ]}
+            />
+          </Field>
+          <Field pal={pal} label="GÖRÜNÜM">
+            <Segmented
+              pal={pal}
+              value={nx.mirror ? (nx.mirrorAxis === 'ust' ? 'ust' : 'alt') : 'normal'}
+              onChange={(v) => update(v === 'normal' ? { mirror: false } : { mirror: true, mirrorAxis: v })}
+              options={[
+                { value: 'normal', label: 'NORMAL' },
+                { value: 'ust', label: 'ÜST KENAR CAMA' },
+                { value: 'alt', label: 'ALT KENAR CAMA' },
+              ]}
+            />
+          </Field>
+          <Field pal={pal} label="EKRAN YÖNÜ (KİLİTLİ)">
+            <Segmented<Orientation>
+              pal={pal}
+              value={nx.camOrientation}
+              onChange={(v) => update({ camOrientation: v })}
+              options={[
+                { value: 'yatay', label: 'YATAY' },
+                { value: 'dikey', label: 'DİKEY' },
+              ]}
+            />
+          </Field>
           <Row pal={pal} label="Ekran açık kalsın" hint="HUD ve kokpit ekranında ekran kararmaz">
             <NxSwitch pal={pal} value={nx.keepAwake} onChange={(v) => update({ keepAwake: v })} />
           </Row>

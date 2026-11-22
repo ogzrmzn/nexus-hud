@@ -11,7 +11,7 @@ import { useNexus } from '@/features/nexus/useNexus';
 
 /** Tema seçimi: her tema kendi göstergesiyle canlı önizlenir */
 export default function ThemePicker() {
-  const { nx, pal, day, update } = useNexus();
+  const { nx, upal: pal, day, update } = useNexus();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const reduced = useReducedMotion() || nx.motion === 'az';

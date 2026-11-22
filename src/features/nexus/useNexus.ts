@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNexusSettings } from './NexusProvider';
 import { isDay, type NexusSettings } from './settings';
-import { paletteFor, THEMES, windshieldPalette, type NexusPalette, type NexusTheme } from './themes';
+import { paletteFor, THEMES, uiPalette, windshieldPalette, type NexusPalette, type NexusTheme } from './themes';
 
 export interface NexusCtx {
   nx: NexusSettings;
@@ -10,6 +10,8 @@ export interface NexusCtx {
   pal: NexusPalette;
   /** Cam modu paleti (saf siyah, yüksek kontrast) */
   wpal: NexusPalette;
+  /** Menü ekranları için daha açık palet */
+  upal: NexusPalette;
   day: boolean;
   update: (patch: Partial<NexusSettings>) => void;
 }
@@ -20,5 +22,6 @@ export function useNexus(): NexusCtx {
   const day = isDay(nx.dayNight);
   const pal = useMemo(() => paletteFor(theme, day, nx.accent), [theme, day, nx.accent]);
   const wpal = useMemo(() => windshieldPalette(theme, day, nx.accent), [theme, day, nx.accent]);
-  return { nx, theme, pal, wpal, day, update };
+  const upal = useMemo(() => uiPalette(pal), [pal]);
+  return { nx, theme, pal, wpal, upal, day, update };
 }

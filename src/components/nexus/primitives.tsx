@@ -231,3 +231,74 @@ export function NxSwitch({ value, onChange, pal }: { value: boolean; onChange: (
     </Pressable>
   );
 }
+
+/** − değer + ayarı (hız uyarısı, parlaklık) */
+export function Stepper({ value, onMinus, onPlus, pal, minusDisabled, plusDisabled }: { value: string; onMinus: () => void; onPlus: () => void; pal: NexusPalette; minusDisabled?: boolean; plusDisabled?: boolean }) {
+  const btn = (icon: string, onPress: () => void, disabled?: boolean, label?: string) => (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={6}
+      style={({ pressed }) => ({
+        width: 52,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: alpha(pal.primary, 0.45),
+        backgroundColor: pressed ? alpha(pal.primary, 0.25) : alpha(pal.primary, 0.1),
+        opacity: disabled ? 0.35 : 1,
+        borderRadius: 4,
+      })}
+    >
+      <NxIcon name={icon} size={24} color={pal.text} />
+    </Pressable>
+  );
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      {btn('minus', onMinus, minusDisabled, 'Azalt')}
+      <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: alpha(pal.primary, 0.25), backgroundColor: pal.glass, borderRadius: 4 }}>
+        <NxLabel color={pal.text} size={15} spacing={2} weight="800">
+          {value}
+        </NxLabel>
+      </View>
+      {btn('plus', onPlus, plusDisabled, 'Artır')}
+    </View>
+  );
+}
+
+/** Simgeli seçenek kartları (ekran içeriği, mod) */
+export function OptionCards<T extends string>({ options, value, onChange, pal }: { options: { value: T; label: string; icon: string }[]; value: T; onChange: (v: T) => void; pal: NexusPalette }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 8 }}>
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => onChange(o.value)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 4,
+              borderWidth: 1,
+              borderColor: on ? pal.primary : alpha(pal.primary, 0.2),
+              backgroundColor: on ? alpha(pal.primary, 0.22) : pal.glass,
+            }}
+          >
+            <NxIcon name={o.icon} size={20} color={on ? pal.primary : pal.text} />
+            <NxLabel color={on ? pal.primary : pal.text} size={9.5} spacing={1}>
+              {o.label}
+            </NxLabel>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}

@@ -3,7 +3,12 @@
  * eksik/eski alanlar her okumada varsayılanlarla tamamlanır.
  */
 
-export type NexusThemeId = 'nexus' | 'cyber' | 'quantum' | 'darkmatter' | 'hyperdrive';
+export type NexusThemeId = 'nexus' | 'quantum' | 'hyperdrive' | 'lightspeed' | 'tachyon' | 'neon';
+export type Orientation = 'yatay' | 'dikey';
+/** Cam modunda ekran içeriği */
+export type CamLayout = 'hiz' | 'saat' | 'yolculuk';
+/** Cam modunda aynalama: telefonun hangi kenarı cama bakıyor */
+export type MirrorAxis = 'ust' | 'alt';
 export type SpeedUnit = 'kmh' | 'mph';
 export type DayNight = 'oto' | 'gunduz' | 'gece';
 export type Motion = 'tam' | 'az';
@@ -19,8 +24,14 @@ export interface NexusSettings {
   gaugeScale: number;
   widgets: Record<WidgetKey, boolean>;
   dayNight: DayNight;
-  /** Cam modunda sağ-sol ayna */
+  /** Cam modunda ters (ayna) görünüm */
   mirror: boolean;
+  /** Ayna yönü: 'ust' = üst kenar cama (sağ-sol çevrilir), 'alt' = alt kenar cama (alt-üst çevrilir) */
+  mirrorAxis: MirrorAxis;
+  camLayout: CamLayout;
+  /** Seçilen yön ekranı o yönde kilitler */
+  camOrientation: Orientation;
+  cockpitOrientation: Orientation;
   /** Ekranın kapanmasını engelle */
   keepAwake: boolean;
   /** Cam modu parlaklığı 0.1–1; null = sistem parlaklığı */
@@ -41,6 +52,10 @@ export const DEFAULT_NEXUS: NexusSettings = {
   widgets: { clock: true, tripTime: true, avg: true, max: true, distance: true, compass: true, gps: true, weather: false },
   dayNight: 'oto',
   mirror: true,
+  mirrorAxis: 'ust',
+  camLayout: 'hiz',
+  camOrientation: 'yatay',
+  cockpitOrientation: 'dikey',
   keepAwake: true,
   brightness: 1,
   speedAlert: 0,
@@ -48,7 +63,11 @@ export const DEFAULT_NEXUS: NexusSettings = {
   demo: false,
 };
 
-export const THEME_IDS: NexusThemeId[] = ['nexus', 'cyber', 'quantum', 'darkmatter', 'hyperdrive'];
+export const THEME_IDS: NexusThemeId[] = ['nexus', 'hyperdrive', 'lightspeed', 'tachyon', 'neon', 'quantum'];
+
+/** Hız uyarısı adımı ve sınırları (seçili birimde) */
+export const ALERT_STEP = 10;
+export const ALERT_MAX = 250;
 
 /** Kayıtlı (belki eski/eksik) değeri güvenli ayara çevirir */
 export function resolveNexus(raw: unknown): NexusSettings {
@@ -61,7 +80,11 @@ export function resolveNexus(raw: unknown): NexusSettings {
   if (out.brightness != null) out.brightness = Math.min(1, Math.max(0.1, Number(out.brightness) || 1));
   if (!['oto', 'gunduz', 'gece'].includes(out.dayNight)) out.dayNight = 'oto';
   if (out.motion !== 'az') out.motion = 'tam';
-  out.speedAlert = Math.max(0, Math.round(Number(out.speedAlert) || 0));
+  out.speedAlert = Math.min(ALERT_MAX, Math.max(0, Math.round(Number(out.speedAlert) || 0)));
+  if (out.mirrorAxis !== 'alt') out.mirrorAxis = 'ust';
+  if (!['hiz', 'saat', 'yolculuk'].includes(out.camLayout)) out.camLayout = 'hiz';
+  if (out.camOrientation !== 'dikey') out.camOrientation = 'yatay';
+  if (out.cockpitOrientation !== 'yatay') out.cockpitOrientation = 'dikey';
   return out;
 }
 

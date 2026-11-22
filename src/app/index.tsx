@@ -7,7 +7,9 @@ import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-nativ
 import { BootSequence } from '@/components/nexus/BootSequence';
 import { NxNumber } from '@/components/nexus/NxNumber';
 import { HudButton, NxIcon, NxLabel } from '@/components/nexus/primitives';
-import { alpha, type NexusPalette } from '@/features/nexus/themes';
+import { GAUGE_ASPECT, Gauge } from '@/components/nexus/Gauges';
+import { THEME_IDS } from '@/features/nexus/settings';
+import { alpha, paletteFor, THEMES, type NexusPalette } from '@/features/nexus/themes';
 import { useNexus } from '@/features/nexus/useNexus';
 
 /** Başlatma animasyonu uygulama oturumu başına bir kez */
@@ -99,7 +101,7 @@ function ModeCard({
 
 /** Başlangıç: yalnızca iki kullanım modu, tema ve ayarlar */
 export default function NexusStart() {
-  const { pal, theme, nx } = useNexus();
+  const { upal: pal, pal: hudPal, theme, nx, day, update } = useNexus();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const sysReduced = useReducedMotion();
@@ -153,7 +155,7 @@ export default function NexusStart() {
                 Sürüş arayüzünü seçin
               </NxLabel>
             </Animated.View>
-            <View style={{ flexDirection: landscape ? 'row' : 'column', gap: 14, minHeight: landscape ? 220 : 400 }}>
+            <View style={{ flexDirection: landscape ? 'row' : 'column', gap: 14, minHeight: landscape ? 200 : 330 }}>
               <ModeCard
                 pal={pal}
                 code="MOD 01 · CAM YANSIMASI"
@@ -195,8 +197,48 @@ export default function NexusStart() {
             </View>
           </View>
 
-          <Animated.View entering={reduced ? undefined : FadeInDown.delay(320).duration(500)} style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-            <HudButton icon="palette-swatch-variant" label={`TEMA · ${theme.name.toUpperCase()}`} pal={pal} onPress={() => router.push('/temalar')} />
+          {/* Tüm temalar: canlı önizleme, dokununca seçilir */}
+          <Animated.View entering={reduced ? undefined : FadeInDown.delay(300).duration(500)} style={{ marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <NxLabel color={pal.primary} size={10} spacing={4}>
+                {'// TEMALAR'}
+              </NxLabel>
+              <Pressable onPress={() => router.push('/temalar')} hitSlop={8} accessibilityRole="button">
+                <NxLabel color={pal.dim} size={9} spacing={2}>
+                  TÜMÜ VE RENKLER ›
+                </NxLabel>
+              </Pressable>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 8 }}>
+              {THEME_IDS.map((id) => {
+                const t = THEMES[id];
+                const tp = paletteFor(t, day, id === nx.theme ? nx.accent : null);
+                const on = id === nx.theme;
+                return (
+                  <Pressable
+                    key={id}
+                    onPress={() => update({ theme: id })}
+                    accessibilityRole="button"
+                    accessibilityLabel={t.name}
+                    accessibilityState={{ selected: on }}
+                    style={{ width: 150, padding: 10, backgroundColor: tp.bg, borderWidth: on ? 2 : 1, borderColor: on ? tp.primary : alpha(tp.primary, 0.3), borderRadius: 6 }}
+                  >
+                    <View pointerEvents="none" style={{ alignItems: 'center', height: 104, justifyContent: 'center' }}>
+                      <Gauge kind={t.gauge} speed={88} max={220} width={Math.min(128, 104 / GAUGE_ASPECT[t.gauge])} pal={tp} glyph={t.glyph} unit="KM/H" reduced />
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 }}>
+                      {on ? <NxIcon name="check-decagram" size={13} color={tp.primary} /> : null}
+                      <NxLabel color={on ? tp.primary : tp.text} size={10} spacing={1.5} weight="800" style={{ textTransform: 'none' }}>
+                        {t.name.toUpperCase()}
+                      </NxLabel>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Animated.View>
+
+          <Animated.View entering={reduced ? undefined : FadeInDown.delay(360).duration(500)} style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
             <HudButton icon="tune-variant" label="AYARLAR" pal={pal} onPress={() => router.push('/ayarlar')} />
           </Animated.View>
           {nx.demo ? (
@@ -206,7 +248,7 @@ export default function NexusStart() {
           ) : null}
         </ScrollView>
       ) : null}
-      {boot ? <BootSequence pal={pal} onDone={done} reduced={reduced} /> : null}
+      {boot ? <BootSequence pal={hudPal} onDone={done} reduced={reduced} /> : null}
     </View>
   );
 }

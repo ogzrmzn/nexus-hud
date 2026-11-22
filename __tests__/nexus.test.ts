@@ -43,6 +43,15 @@ describe('NEXUS ayarlar', () => {
     expect(r.widgets.clock).toBe(false);
     expect(r.widgets.distance).toBe(true);
   });
+  it('kaldırılan tema ve bozuk yeni alanlar güvenli değere döner', () => {
+    const r = resolveNexus({ theme: 'cyber', speedAlert: 999, mirrorAxis: 'x', camOrientation: 'x', cockpitOrientation: 'x', camLayout: 'x' });
+    expect(r.theme).toBe('nexus');
+    expect(r.speedAlert).toBe(250);
+    expect(r.mirrorAxis).toBe('ust');
+    expect(r.camOrientation).toBe('yatay');
+    expect(r.cockpitOrientation).toBe('dikey');
+    expect(r.camLayout).toBe('hiz');
+  });
   it('gündüz/gece', () => {
     expect(isDay('gece', new Date(2026, 0, 1, 12))).toBe(false);
     expect(isDay('oto', new Date(2026, 0, 1, 12))).toBe(true);
@@ -51,11 +60,11 @@ describe('NEXUS ayarlar', () => {
 });
 
 describe('NEXUS temalar', () => {
-  it('beş tema; geometri ve yerleşim birbirinden farklı', () => {
-    expect(THEME_IDS).toHaveLength(5);
-    expect(new Set(THEME_IDS.map((t) => THEMES[t].gauge)).size).toBe(5);
-    expect(new Set(THEME_IDS.map((t) => THEMES[t].layout)).size).toBe(5);
-    expect(new Set(THEME_IDS.map((t) => THEMES[t].glyph)).size).toBe(5);
+  it('altı tema; her birinin gösterge geometrisi farklı', () => {
+    expect(THEME_IDS).toHaveLength(6);
+    expect(new Set(THEME_IDS.map((t) => THEMES[t].gauge)).size).toBe(6);
+    expect(THEME_IDS).not.toContain('cyber');
+    expect(THEME_IDS).not.toContain('darkmatter');
   });
   it('cam paleti her temada saf siyah', () => {
     for (const t of THEME_IDS) expect(windshieldPalette(THEMES[t], true, null).bg).toBe('#000000');

@@ -9,6 +9,7 @@ import Svg, { Line } from 'react-native-svg';
 import { GAUGE_ASPECT, Gauge } from '@/components/nexus/Gauges';
 import { CompassDial, GpsScan, HeadingTape, SignalAlert, SignalIndicator } from '@/components/nexus/Instruments';
 import { NxNumber } from '@/components/nexus/NxNumber';
+import { HudDrawer } from '@/components/nexus/HudDrawer';
 import { DataCell, HudButton, NxIcon, NxLabel, Panel } from '@/components/nexus/primitives';
 import { avgKmh } from '@/features/nexus/trip';
 import { clockDuration, clockText, distanceText, distUnitLabel, gaugeMax, headingLabel, toUnit, unitLabel } from '@/features/nexus/format';
@@ -60,7 +61,8 @@ export default function Cockpit() {
   const w = nx.widgets;
   const gps = useNexusGps({ demo: nx.demo, compass: w.compass });
   const weather = useNexusWeather(w.weather, gps.trip.last?.lat ?? null, gps.trip.last?.lon ?? null);
-  useHudSystem({ keepAwake: nx.keepAwake, orientation: 'free' });
+  useHudSystem({ keepAwake: nx.keepAwake, orientation: nx.cockpitOrientation });
+  const [drawer, setDrawer] = useState(false);
 
   const landscape = width > height;
   const contentW = width - insets.left - insets.right - 32;
@@ -284,15 +286,8 @@ export default function Cockpit() {
               </NxLabel>
             </View>
           ) : null}
-          {moving ? (
-            <NxIcon name="lock" size={16} color={pal.dim} />
-          ) : (
-            <>
-              <HudButton icon="restart" pal={pal} size={36} onPress={gps.resetTrip} />
-              <HudButton icon="palette-swatch-variant" pal={pal} size={36} onPress={() => router.push('/temalar')} />
-              <HudButton icon="tune-variant" pal={pal} size={36} onPress={() => router.push('/ayarlar')} />
-            </>
-          )}
+          {moving ? null : <HudButton icon="restart" pal={pal} size={36} onPress={gps.resetTrip} />}
+          <HudButton icon="menu" pal={pal} size={36} label="PANEL" active onPress={() => setDrawer(true)} />
         </View>
         {alert ? <View style={{ marginTop: 8, alignItems: 'center' }}>{alert}</View> : null}
         <View style={{ flex: 1, marginTop: 8 }}>{body}</View>
@@ -300,11 +295,12 @@ export default function Cockpit() {
           <NxLabel color={alpha(pal.dim, 0.9)} size={8} spacing={1.6} style={{ textTransform: 'none' }}>
             {`// ${theme.name.toUpperCase()}`}
           </NxLabel>
-          <NxLabel color={moving ? pal.warn : alpha(pal.dim, 0.9)} size={8} spacing={1.6}>
-            {moving ? 'KONTROLLER KİLİTLİ' : 'DIGITAL COCKPIT'}
+          <NxLabel color={alpha(pal.dim, 0.9)} size={8} spacing={1.6}>
+            DIGITAL COCKPIT
           </NxLabel>
         </View>
       </Animated.View>
+      <HudDrawer mode="kokpit" open={drawer} onClose={() => setDrawer(false)} />
     </View>
   );
 }
