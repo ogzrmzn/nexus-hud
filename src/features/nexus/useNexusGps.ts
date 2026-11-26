@@ -18,11 +18,11 @@ export type GpsStatus =
   | 'demo';
 
 /** Bu süre konum gelmezse sinyal kayıp sayılır */
-export const LOST_AFTER_MS = 6000;
+export const LOST_AFTER_MS = 10000;
 /** Bundan kötü doğrulukta hız gösterilmez */
-export const MAX_SPEED_ACCURACY_M = 50;
+export const MAX_SPEED_ACCURACY_M = 65;
 /** Cihaz hızı kendisi ölçüyorsa (Doppler) konum doğruluğu bundan kötü olmadıkça hız gösterilir */
-export const MAX_DEVICE_SPEED_ACCURACY_M = 100;
+export const MAX_DEVICE_SPEED_ACCURACY_M = 150;
 
 export interface ConfirmedMax {
   prev: number;

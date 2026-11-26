@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Platform, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -119,7 +119,8 @@ export default function Cockpit() {
   };
 
   // Hız rakamı rengi temadan ayrı seçilir (varsayılan beyaz)
-  const speedPal = { ...pal, text: nx.speedColor ?? pal.primary };
+  // useMemo: gösterge her GPS güncellemesinde boşuna yeniden çizilmesin
+  const speedPal = useMemo(() => ({ ...pal, text: nx.speedColor ?? pal.primary }), [pal, nx.speedColor]);
   const gauge = (aw: number, ah: number) => {
     const gw = Math.min(aw, ah / GAUGE_ASPECT[theme.gauge]) * nx.gaugeScale * 0.97;
     return <Gauge kind={theme.gauge} speed={speed} max={gaugeMax(nx.unit)} width={gw} pal={speedPal} glyph={theme.glyph} unit={unitL} over={over} reduced={reduced} center={centerFor(gw)} />;

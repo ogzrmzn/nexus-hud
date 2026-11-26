@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import Animated, {
   Easing,
   useFrameCallback,
@@ -104,9 +104,15 @@ function useLoop(speed: number | null, reduced: boolean | undefined, slowMs: num
     const target = 1 / slowMs + (1 / fastMs - 1 / slowMs) * k;
     rate.value = withTiming(target, { duration: 900, easing: Easing.inOut(Easing.quad) });
   }, [k, slowMs, fastMs, rate]);
+  // Web'de (telefon tarayıcısı) çizim ana iş parçacığında yapılır: ~30 fps ile sınırlanır ki hız güncellemeleri takılmasın
+  const acc = useSharedValue(0);
+  const minStep = Platform.OS === 'web' ? 33 : 0;
   const cb = useFrameCallback((f) => {
     const dt = Math.min(64, f.timeSincePreviousFrame ?? 16);
-    phase.value = (phase.value + dt * rate.value) % 1;
+    acc.value += dt;
+    if (acc.value < minStep) return;
+    phase.value = (phase.value + acc.value * rate.value) % 1;
+    acc.value = 0;
   }, false);
   useEffect(() => {
     cb.setActive(!reduced);
@@ -372,10 +378,10 @@ const BR_R2 = (() => {
 function auroraPath(phase: number, amp: number, freq: number, offset: number, y0: number) {
   'worklet';
   let d = '';
-  for (let i = 0; i <= 40; i++) {
-    const x = (i / 40) * 100;
+  for (let i = 0; i <= 24; i++) {
+    const x = (i / 24) * 100;
     // kenarlara doğru söner (sinüs pencere)
-    const env = Math.sin((i / 40) * Math.PI);
+    const env = Math.sin((i / 24) * Math.PI);
     const y = y0 + Math.sin((x / 100) * Math.PI * 2 * freq + phase * Math.PI * 2 + offset) * amp * env;
     d += (i === 0 ? 'M' : 'L') + x.toFixed(2) + ' ' + y.toFixed(2);
   }

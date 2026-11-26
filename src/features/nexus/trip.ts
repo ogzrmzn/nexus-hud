@@ -61,6 +61,8 @@ export function compassLabel(deg: number | null): string {
 
 /** Bu hızın altı "duruyor" sayılır (GPS titremesi) */
 const STOP_KMH = 3;
+/** Konumdan hesaplanan bundan yüksek hız GPS sıçramasıdır */
+const MAX_PLAUSIBLE_KMH = 300;
 /** Konum doğruluğu bundan kötüyse mesafeye eklenmez */
 const MAX_ACCURACY_M = 35;
 
@@ -79,8 +81,14 @@ export function addPoint(trip: Trip, p: GpsPoint): Trip {
 
   // Bu noktadaki ölçülen hız (km/sa); ölçüm yoksa null
   let measured: number | null = null;
-  if (p.speed != null && p.speed >= 0) measured = p.speed * 3.6;
-  else if (prev && goodFix && !duplicate && dt >= 0.8) measured = (d / dt) * 3.6;
+  const deviceSpeed = p.speed != null && p.speed >= 0;
+  if (deviceSpeed) measured = p.speed! * 3.6;
+  else if (prev && goodFix && !duplicate && dt >= 0.8) {
+    const v = (d / dt) * 3.6;
+    // Konumdan hesaplanan hız titrer: gerçek dışı sıçrama yok sayılır, kalanı yumuşatılır.
+    // (Cihazın kendi ölçtüğü hız Doppler tabanlıdır, olduğu gibi kullanılır.)
+    if (v <= MAX_PLAUSIBLE_KMH) measured = trip.speedKmh >= STOP_KMH && v >= STOP_KMH ? trip.speedKmh * 0.4 + v * 0.6 : v;
+  }
 
   // Gösterilen hız: düşük ölçüm hemen değil, belli süre sürerse 0 olur
   let shown = trip.speedKmh;

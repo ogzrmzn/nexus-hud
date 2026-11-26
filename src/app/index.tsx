@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { useCallback, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
@@ -14,7 +14,7 @@ import { alpha, paletteFor, THEMES, type NexusPalette } from '@/features/nexus/t
 import { useNexus } from '@/features/nexus/useNexus';
 
 /** Ekranda görünen sürüm etiketi: telefonda hangi sürümün açıldığını doğrulamak için */
-const APP_BUILD = 'SÜRÜM 18 · 26.11';
+const APP_BUILD = 'SÜRÜM 19 · 26.11';
 
 /** Başlatma animasyonu uygulama oturumu başına bir kez */
 let booted = false;
@@ -121,6 +121,9 @@ export default function NexusStart() {
   const { width, height } = useWindowDimensions();
   const sysReduced = useReducedMotion();
   const enterReduced = sysReduced || nx.motion === 'az';
+  // Sürüş ekranı açıkken ana sayfa arkada kalır: önizleme animasyonları durur (performans)
+  const focused = useIsFocused();
+  const previewStill = !focused || nx.motion === 'az';
   const [boot, setBoot] = useState(!booted);
   const landscape = width > height;
 
@@ -231,7 +234,7 @@ export default function NexusStart() {
                   delay={160 + i * 60}
                   reduced={enterReduced}
                   onPress={() => openTheme(id)}
-                  preview={<Gauge kind={t.gauge} speed={60} max={220} width={gw} pal={tp} glyph={t.glyph} unit="KM/H" reduced={nx.motion === 'az'} />}
+                  preview={<Gauge kind={t.gauge} speed={60} max={220} width={gw} pal={tp} glyph={t.glyph} unit="KM/H" reduced={previewStill} />}
                 />
               );
             })}

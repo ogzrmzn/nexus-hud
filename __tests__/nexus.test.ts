@@ -91,9 +91,9 @@ describe('NEXUS GPS dürüstlüğü', () => {
     expect(deriveStatus('bagli', null, null, 0)).toBe('araniyor');
     expect(deriveStatus('bagli', 0, 5, LOST_AFTER_MS + 1)).toBe('kayip');
     expect(deriveStatus('bagli', 0, 80, 1000)).toBe('zayif');
-    // cihaz hızı kendisi ölçüyorsa 100 m'ye kadar hız gösterilir
+    // cihaz hızı kendisi ölçüyorsa 150 m'ye kadar hız gösterilir
     expect(deriveStatus('bagli', 0, 80, 1000, true)).toBe('bagli');
-    expect(deriveStatus('bagli', 0, 120, 1000, true)).toBe('zayif');
+    expect(deriveStatus('bagli', 0, 200, 1000, true)).toBe('zayif');
     expect(deriveStatus('bagli', 0, 5, 1000)).toBe('bagli');
     expect(deriveStatus('reddedildi', 0, 5, 1000)).toBe('reddedildi');
   });
@@ -152,5 +152,27 @@ describe('Ortak ana renk', () => {
       expect(THEMES[t].night.primary).toBe(APP_PRIMARY.night);
       expect(THEMES[t].day.primary).toBe(APP_PRIMARY.day);
     }
+  });
+});
+
+describe('Hız kararlılığı', () => {
+  const { addPoint, newTrip } = jest.requireActual('@/features/nexus/trip');
+  it('konumdan hesaplanan hızdaki tek sıçrama yumuşatılır, gerçek dışı sıçrama yok sayılır', () => {
+    let t = newTrip(0);
+    // ~100 km/sa sabit gidiş (cihaz hız göndermiyor)
+    for (let i = 0; i <= 6; i++) t = addPoint(t, { lat: 41 + i * 0.00025, lon: 29, time: i * 1000, speed: null, heading: null, accuracy: 5 });
+    expect(Math.round(t.speedKmh)).toBe(100);
+    // tek seferlik 1 km'lik konum sıçraması (3600 km/sa) → yok sayılır
+    const jump = addPoint(t, { lat: 41 + 6 * 0.00025 + 0.009, lon: 29, time: 7000, speed: null, heading: null, accuracy: 5 });
+    expect(Math.round(jump.speedKmh)).toBe(100);
+    // 100 → 140 ölçümü tek adımda tam atlamaz (yumuşatılır)
+    const fast = addPoint(t, { lat: 41 + 6 * 0.00025 + 0.00035, lon: 29, time: 7000, speed: null, heading: null, accuracy: 5 });
+    expect(fast.speedKmh).toBeGreaterThan(110);
+    expect(fast.speedKmh).toBeLessThan(135);
+  });
+  it('cihazın kendi ölçtüğü hız olduğu gibi kullanılır', () => {
+    let t = newTrip(0);
+    t = addPoint(t, { lat: 41, lon: 29, time: 0, speed: 20, heading: null, accuracy: 5 });
+    expect(Math.round(t.speedKmh)).toBe(72);
   });
 });
