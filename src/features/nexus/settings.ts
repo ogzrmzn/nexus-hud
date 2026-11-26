@@ -3,7 +3,7 @@
  * eksik/eski alanlar her okumada varsayılanlarla tamamlanır.
  */
 
-export type NexusThemeId = 'nexus' | 'quantum' | 'hyperdrive' | 'lightspeed' | 'nova' | 'neon';
+export type NexusThemeId = 'nexus' | 'quantum' | 'hyperdrive' | 'lightspeed' | 'nova' | 'neon' | 'holo';
 export type Orientation = 'yatay' | 'dikey';
 /** Cam modunda aynalama: telefonun hangi kenarı cama bakıyor */
 export type MirrorAxis = 'ust' | 'alt';
@@ -71,7 +71,7 @@ export const DEFAULT_NEXUS: NexusSettings = {
   lastPos: null,
 };
 
-export const THEME_IDS: NexusThemeId[] = ['nexus', 'hyperdrive', 'lightspeed', 'nova', 'neon', 'quantum'];
+export const THEME_IDS: NexusThemeId[] = ['nexus', 'hyperdrive', 'lightspeed', 'nova', 'neon', 'quantum', 'holo'];
 
 /** Hız uyarısı adımı ve sınırları (seçili birimde) */
 export const ALERT_STEP = 10;

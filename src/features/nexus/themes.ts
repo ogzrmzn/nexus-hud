@@ -11,7 +11,8 @@ export type GaugeKind =
   | 'orbit' // Yörünge: 270° çanak yay, üzerinde kayan parçacık
   | 'warp' // Warp: ufka daralan perspektif şeritler
   | 'streak' // Lightspeed: merkezden dışa akan yıldız çizgileri + açılan ışık yayı
-  | 'nova' // Nova Drive: dönen spiral yıldız akışı + iki yanda açılan ışık parantezleri
+  | 'nova' // Nova Drive: içinden geçen aurora dalgaları + iki yanda açılan ışık parantezleri
+  | 'sphere' // Holosphere: dönen tel kafes hologram küre, tarama bandı, dolan ekvator halkası
   | 'road'; // Neon Highway: perspektifli yol ızgarası, akan şerit çizgileri
 
 /** Kokpit veri yerleşimi */
@@ -102,7 +103,7 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
   nova: {
     id: 'nova',
     name: 'Nova Drive',
-    tagline: 'Sakin spiral yıldız akışı · iki yanda ışık parantezi',
+    tagline: 'Yavaşça dalgalanan aurora şeritleri · iki yanda ışık parantezi',
     gauge: 'nova',
     layout: 'rail',
     glyph: 'prism',
@@ -120,6 +121,17 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     chamfer: 12,
     night: { ...base, bg: '#040312', text: '#FFFFFF', primary: '#19F5D0', secondary: '#4F8BFF', holo: '#C054FF', dim: '#45407A', glass: 'rgba(25,245,208,0.06)' },
     day: { ...base, bg: '#0A0820', text: '#FFFFFF', primary: '#5CFFE2', secondary: '#7FAAFF', holo: '#D485FF', dim: '#837DB8', glass: 'rgba(92,255,226,0.11)' },
+  },
+  holo: {
+    id: 'holo',
+    name: 'Holosphere',
+    tagline: 'Dönen hologram küre · tarama bandı · dolan ekvator halkası',
+    gauge: 'sphere',
+    layout: 'columns',
+    glyph: 'prism',
+    chamfer: 10,
+    night: { ...base, bg: '#070402', text: '#FFF6E6', primary: '#FFB547', secondary: '#4FE3FF', holo: '#FF7A3D', dim: '#6E5A3E', glass: 'rgba(255,181,71,0.07)' },
+    day: { ...base, bg: '#120B04', text: '#FFFFFF', primary: '#FFC56E', secondary: '#7AEBFF', holo: '#FF9662', dim: '#A89270', glass: 'rgba(255,197,110,0.12)' },
   },
 };
 

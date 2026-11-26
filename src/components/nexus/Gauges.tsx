@@ -36,7 +36,7 @@ export interface GaugeProps {
 }
 
 /** Göstergenin yükseklik/genişlik oranı */
-export const GAUGE_ASPECT: Record<GaugeKind, number> = { blade: 0.78, orbit: 0.92, warp: 0.66, streak: 0.8, nova: 0.8, road: 0.66 };
+export const GAUGE_ASPECT: Record<GaugeKind, number> = { blade: 0.78, orbit: 0.92, warp: 0.66, streak: 0.8, nova: 0.8, sphere: 0.9, road: 0.66 };
 
 const D2R = Math.PI / 180;
 const pt = (cx: number, cy: number, r: number, deg: number) => [cx + r * Math.cos(deg * D2R), cy + r * Math.sin(deg * D2R)] as const;
@@ -351,24 +351,14 @@ const StreakGauge = memo(function StreakGauge({ speed, max, width, pal, glyph, u
 });
 
 // ---------------------------------------------------------------------------
-// 5) Nova Drive — Spiral yıldız akışı
+// 5) Nova Drive — Aurora dalgaları
 // ---------------------------------------------------------------------------
-const NOVA_D = Array.from({ length: 40 }, (_, i) => {
-  const a = (i * 360) / 40;
-  const r0 = 12 + (i % 4) * 2.5;
-  // hafif kıvrık (spiral) çizgi
-  const p0 = pt(50, 50, r0, a);
-  const pm = pt(50, 50, 36, a + 9);
-  const p1 = pt(50, 50, 72, a + 22);
-  return `M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}Q${pm[0].toFixed(2)} ${pm[1].toFixed(2)} ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}`;
-}).join('');
-const NOVA_PERIOD = 12;
 const BR_R = 36;
 const BR_SPAN = 76;
 const BR_LEN = BR_R * BR_SPAN * D2R;
-// sol parantez: alttan (142°) yukarı (218°); sağ parantez: alttan (38°) yukarı (-38°)
+// sol parantez: alttan yukarı; sağ parantez: alttan yukarı (iki yan simetrik dolar)
 const BR_L = (() => {
-  const a = pt(50, 40, BR_R, 180 - BR_SPAN / 2 + 0);
+  const a = pt(50, 40, BR_R, 180 - BR_SPAN / 2);
   const b = pt(50, 40, BR_R, 180 + BR_SPAN / 2);
   return `M${a[0].toFixed(2)} ${a[1].toFixed(2)} A${BR_R} ${BR_R} 0 0 1 ${b[0].toFixed(2)} ${b[1].toFixed(2)}`;
 })();
@@ -378,36 +368,128 @@ const BR_R2 = (() => {
   return `M${a[0].toFixed(2)} ${a[1].toFixed(2)} A${BR_R} ${BR_R} 0 0 0 ${b[0].toFixed(2)} ${b[1].toFixed(2)}`;
 })();
 
+/** Bir aurora şeridi: yatay, yumuşak dalga; genliği hızla kabarır, akışı hep sakin */
+function auroraPath(phase: number, amp: number, freq: number, offset: number, y0: number) {
+  'worklet';
+  let d = '';
+  for (let i = 0; i <= 40; i++) {
+    const x = (i / 40) * 100;
+    // kenarlara doğru söner (sinüs pencere)
+    const env = Math.sin((i / 40) * Math.PI);
+    const y = y0 + Math.sin((x / 100) * Math.PI * 2 * freq + phase * Math.PI * 2 + offset) * amp * env;
+    d += (i === 0 ? 'M' : 'L') + x.toFixed(2) + ' ' + y.toFixed(2);
+  }
+  return d;
+}
+
 const NovaGauge = memo(function NovaGauge({ speed, max, width, pal, glyph, unit, over, reduced, center }: GaugeProps) {
   const h = width * GAUGE_ASPECT.nova;
   const shown = useTweenedSpeed(speed, reduced);
   const f = useFraction(speed, max, reduced);
-  // Nova: illüzyon hıza bağlı değil; sabit ve çok yavaş akar
-  const flow = useLoop(0, reduced, 9000, 9000);
-  const spin = useLoop(0, reduced, 70000, 70000);
-  const streakProps = useAnimatedProps(() => ({ strokeDashoffset: -flow.value * NOVA_PERIOD }));
-  const spinStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
+  // Nova: akış hıza bağlı değil, sabit ve çok yavaş; yalnızca dalga genliği hızla kabarır
+  const flow = useLoop(0, reduced, 12000, 12000);
+  const w1 = useAnimatedProps(() => ({ d: auroraPath(flow.value, 9 + f.value * 14, 1.1, 0, 40) }));
+  const w2 = useAnimatedProps(() => ({ d: auroraPath(-flow.value, 7 + f.value * 12, 1.6, 1.3, 44) }));
+  const w3 = useAnimatedProps(() => ({ d: auroraPath(flow.value * 0.6, 11 + f.value * 16, 0.8, 2.6, 36) }));
+  const w4 = useAnimatedProps(() => ({ d: auroraPath(-flow.value * 0.8, 13 + f.value * 14, 0.6, 4.1, 42) }));
+  const w5 = useAnimatedProps(() => ({ d: auroraPath(flow.value * 1.3, 6 + f.value * 10, 2.1, 5.2, 38) }));
   const lProps = useAnimatedProps(() => ({ strokeDashoffset: BR_LEN * (1 - f.value) }));
   const rProps = useAnimatedProps(() => ({ strokeDashoffset: BR_LEN * (1 - f.value) }));
   const col = over ? pal.danger : pal.primary;
-  const sq = Math.max(width, h) * 1.15;
   return (
-    <View style={{ width, height: h, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-      <Animated.View pointerEvents="none" style={[{ position: 'absolute', width: sq, height: sq }, spinStyle]}>
-        <Svg width={sq} height={sq} viewBox="0 0 100 100">
-          <Path d={NOVA_D} stroke={alpha(pal.holo, 0.14)} strokeWidth={0.3} fill="none" />
-          <APath d={NOVA_D} stroke={alpha(pal.secondary, 0.8)} strokeWidth={0.4} fill="none" strokeLinecap="round" strokeDasharray="1.4 10.6" animatedProps={streakProps} />
-        </Svg>
-      </Animated.View>
-      <Svg width={width} height={h} viewBox="0 0 100 80" style={{ position: 'absolute' }}>
-        <Ellipse cx={50} cy={40} rx={29} ry={25} fill={alpha(pal.bg, 0.86)} />
+    <View style={{ width, height: h, overflow: 'hidden' }}>
+      <Svg width={width} height={h} viewBox="0 0 100 80">
+        {/* aurora: geniş soluk ışık + ince parlak çekirdek */}
+        <APath stroke={alpha(pal.secondary, 0.1)} strokeWidth={14} fill="none" strokeLinecap="round" animatedProps={w4} />
+        <APath stroke={alpha(pal.holo, 0.12)} strokeWidth={10} fill="none" strokeLinecap="round" animatedProps={w5} />
+        <APath stroke={alpha(pal.holo, 0.18)} strokeWidth={7} fill="none" strokeLinecap="round" animatedProps={w3} />
+        <APath stroke={alpha(pal.secondary, 0.22)} strokeWidth={5} fill="none" strokeLinecap="round" animatedProps={w2} />
+        <APath stroke={alpha(pal.primary, 0.28)} strokeWidth={6} fill="none" strokeLinecap="round" animatedProps={w1} />
+        <APath stroke={alpha(pal.secondary, 0.55)} strokeWidth={0.4} fill="none" animatedProps={w4} />
+        <APath stroke={alpha(pal.holo, 0.6)} strokeWidth={0.4} fill="none" animatedProps={w5} />
+        <APath stroke={alpha(pal.holo, 0.8)} strokeWidth={0.5} fill="none" animatedProps={w3} />
+        <APath stroke={alpha(pal.secondary, 0.85)} strokeWidth={0.5} fill="none" animatedProps={w2} />
+        <APath stroke={pal.primary} strokeWidth={0.7} fill="none" animatedProps={w1} />
+        <Ellipse cx={50} cy={40} rx={27} ry={21} fill={alpha(pal.bg, 0.82)} />
         <Path d={`${BR_L}${BR_R2}`} stroke={alpha(pal.primary, 0.16)} strokeWidth={2.2} fill="none" strokeLinecap="round" />
         <APath d={BR_L} stroke={col} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeDasharray={`${BR_LEN} ${BR_LEN}`} animatedProps={lProps} />
         <APath d={BR_R2} stroke={col} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeDasharray={`${BR_LEN} ${BR_LEN}`} animatedProps={rProps} />
-        <Path d="M50 9 L50 13 M50 67 L50 71" stroke={pal.holo} strokeWidth={0.8} />
       </Svg>
       <CenterBox top={0} height={h}>
         {center ?? <Readout value={shown} height={h * 0.34} pal={pal} glyph={glyph} unit={unit} over={over} />}
+      </CenterBox>
+    </View>
+  );
+});
+
+// ---------------------------------------------------------------------------
+// 7) Holosphere — Dönen holografik küre
+// ---------------------------------------------------------------------------
+const SP_C = 45;
+const SP_R = 34;
+const SP_PARALLELS = [-60, -35, -12, 12, 35, 60]
+  .map((lat) => {
+    const y = SP_C + SP_R * Math.sin(lat * D2R);
+    const rx = SP_R * Math.cos(lat * D2R);
+    const ry = rx * 0.16;
+    return `M${(50 - rx).toFixed(2)} ${y.toFixed(2)} A${rx.toFixed(2)} ${ry.toFixed(2)} 0 1 0 ${(50 + rx).toFixed(2)} ${y.toFixed(2)} A${rx.toFixed(2)} ${ry.toFixed(2)} 0 1 0 ${(50 - rx).toFixed(2)} ${y.toFixed(2)}`;
+  })
+  .join('');
+// ekvator halkası (kürenin dışında, eğik)
+const RING_RX = 47;
+const RING_RY = 9;
+const RING_D = `M${50 - RING_RX} ${SP_C} A${RING_RX} ${RING_RY} 0 1 0 ${50 + RING_RX} ${SP_C} A${RING_RX} ${RING_RY} 0 1 0 ${50 - RING_RX} ${SP_C}`;
+const RING_LEN = Math.PI * (3 * (RING_RX + RING_RY) - Math.sqrt((3 * RING_RX + RING_RY) * (RING_RX + 3 * RING_RY)));
+
+const SphereGauge = memo(function SphereGauge({ speed, max, width, pal, glyph, unit, over, reduced, center }: GaugeProps) {
+  const h = width * GAUGE_ASPECT.sphere;
+  const shown = useTweenedSpeed(speed, reduced);
+  const f = useFraction(speed, max, reduced);
+  const spin = useLoop(speed == null ? 0 : speed, reduced, 24000, 6000);
+  const scan = useLoop(0, reduced, 7000, 7000);
+  const meridians = useAnimatedProps(() => {
+    let d = '';
+    for (let i = 0; i < 8; i++) {
+      const a = spin.value * Math.PI * 2 + (i * Math.PI) / 8;
+      const rx = Math.abs(Math.cos(a)) * SP_R;
+      if (rx < 0.3) {
+        d += `M50 ${SP_C - SP_R}L50 ${SP_C + SP_R}`;
+        continue;
+      }
+      d += `M50 ${SP_C - SP_R}A${rx.toFixed(2)} ${SP_R} 0 0 1 50 ${SP_C + SP_R}A${rx.toFixed(2)} ${SP_R} 0 0 1 50 ${SP_C - SP_R}`;
+    }
+    return { d };
+  });
+  const scanProps = useAnimatedProps(() => {
+    // tarama bandı kürenin üstünden altına iner, sonra geri çıkar
+    const t = scan.value < 0.5 ? scan.value * 2 : (1 - scan.value) * 2;
+    const lat = (-70 + 140 * t) * (Math.PI / 180);
+    const y = SP_C + SP_R * Math.sin(lat);
+    const rx = SP_R * Math.cos(lat);
+    return { d: `M${(50 - rx).toFixed(2)} ${y.toFixed(2)}L${(50 + rx).toFixed(2)} ${y.toFixed(2)}` };
+  });
+  const ringProps = useAnimatedProps(() => ({ strokeDashoffset: RING_LEN * (1 - f.value) }));
+  const dotProps = useAnimatedProps(() => {
+    // ışık noktası halkanın dolu ucunda
+    const a = Math.PI + f.value * Math.PI * 2;
+    return { cx: 50 + RING_RX * Math.cos(a), cy: SP_C - RING_RY * Math.sin(a) };
+  });
+  const col = over ? pal.danger : pal.primary;
+  return (
+    <View style={{ width, height: h, overflow: 'hidden' }}>
+      <Svg width={width} height={h} viewBox="0 0 100 90">
+        <Circle cx={50} cy={SP_C} r={SP_R + 4} fill={alpha(pal.primary, 0.05)} />
+        <Circle cx={50} cy={SP_C} r={SP_R} stroke={alpha(pal.primary, 0.75)} strokeWidth={0.6} fill={alpha(pal.bg, 0.4)} />
+        <Path d={SP_PARALLELS} stroke={alpha(pal.primary, 0.35)} strokeWidth={0.35} fill="none" />
+        <APath stroke={alpha(pal.primary, 0.5)} strokeWidth={0.4} fill="none" animatedProps={meridians} />
+        <APath stroke={pal.secondary} strokeWidth={0.9} strokeLinecap="round" animatedProps={scanProps} />
+        <Path d={RING_D} stroke={alpha(pal.holo, 0.25)} strokeWidth={1.6} fill="none" />
+        <APath d={RING_D} stroke={col} strokeWidth={1.6} fill="none" strokeLinecap="round" strokeDasharray={`${RING_LEN} ${RING_LEN}`} animatedProps={ringProps} />
+        <ACircle r={1.8} fill={pal.text} animatedProps={dotProps} />
+        <Circle cx={50} cy={SP_C} r={21} fill={alpha(pal.bg, 0.78)} />
+      </Svg>
+      <CenterBox top={0} height={h}>
+        {center ?? <Readout value={shown} height={h * 0.26} pal={pal} glyph={glyph} unit={unit} over={over} />}
       </CenterBox>
     </View>
   );
@@ -471,6 +553,8 @@ export function Gauge({ kind, ...p }: GaugeProps & { kind: GaugeKind }) {
       return <StreakGauge {...p} />;
     case 'nova':
       return <NovaGauge {...p} />;
+    case 'sphere':
+      return <SphereGauge {...p} />;
     case 'road':
       return <RoadGauge {...p} />;
     default:

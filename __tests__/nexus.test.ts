@@ -54,9 +54,9 @@ describe('NEXUS ayarlar', () => {
 });
 
 describe('NEXUS temalar', () => {
-  it('altı kokpit teması; her birinin gösterge geometrisi farklı', () => {
-    expect(THEME_IDS).toHaveLength(6);
-    expect(new Set(THEME_IDS.map((t) => THEMES[t].gauge)).size).toBe(6);
+  it('yedi kokpit teması; her birinin gösterge geometrisi farklı', () => {
+    expect(THEME_IDS).toHaveLength(7);
+    expect(new Set(THEME_IDS.map((t) => THEMES[t].gauge)).size).toBe(7);
     expect(THEME_IDS).not.toContain('cyber');
     expect(THEME_IDS).not.toContain('darkmatter');
   });
