@@ -6,7 +6,7 @@ import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'reac
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { measureNx, NxNumber } from '@/components/nexus/NxNumber';
-import { HudDrawer } from '@/components/nexus/HudDrawer';
+import { DimOverlay, HudDrawer } from '@/components/nexus/HudDrawer';
 import { HudButton, NxLabel } from '@/components/nexus/primitives';
 import { clockDuration, clockText, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
 import { alpha } from '@/features/nexus/themes';
@@ -32,7 +32,9 @@ export default function Windshield() {
   const speed = gps.speedKmh == null ? null : Math.round(toUnit(gps.speedKmh, nx.unit));
   const over = nx.speedAlert > 0 && speed != null && speed > nx.speedAlert;
   const statusInfo = STATUS_TEXT[gps.status];
-  const layout = nx.camLayout;
+  const showClock = nx.widgets.clock;
+  const showDist = nx.widgets.distance;
+  const showTime = nx.widgets.tripTime;
 
   // Kontroller 5 sn sonra kaybolur (panel açıkken kalır)
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function Windshield() {
 
   const glyph = 'prism' as const;
   const ratio = measureNx('188', 1, glyph);
-  const extras = layout !== 'hiz';
+  const extras = showClock || showDist || showTime;
   const numH = Math.min(H * (extras ? 0.44 : 0.56), (W * 0.84) / ratio) * nx.gaugeScale;
   const auxH = Math.max(22, Math.min(40, H * 0.1));
   const bigAux = Math.max(30, Math.min(64, H * 0.13));
@@ -91,7 +93,7 @@ export default function Windshield() {
         }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: auxH * 1.2 }}>
-          {layout === 'saat' ? <NxNumber text={clock} height={bigAux} color={pal.text} style={glyph} weightScale={1.25} /> : <View />}
+          {showClock ? <NxNumber text={clock} height={bigAux} color={pal.text} style={glyph} weightScale={1.25} /> : <View />}
           {nx.demo ? (
             <NxLabel color={pal.warn} size={auxH * 0.7} spacing={4} weight="800">
               DEMO
@@ -121,15 +123,19 @@ export default function Windshield() {
           </NxLabel>
         </View>
 
-        {layout === 'yolculuk' ? (
+        {showDist || showTime ? (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            {showDist ? (
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
               <NxNumber text={fixed ? distanceText(gps.trip.distanceM, nx.unit) : '--'} height={bigAux} color={pal.text} style={glyph} weightScale={1.25} />
               <NxLabel color={pal.dim} size={auxH * 0.6} spacing={2} weight="800">
                 {distUnitLabel(nx.unit)}
               </NxLabel>
             </View>
-            <NxNumber text={fixed ? clockDuration(gps.now - gps.trip.startedAt) : '--'} height={bigAux} color={pal.text} style={glyph} weightScale={1.25} />
+            ) : (
+              <View />
+            )}
+            {showTime ? <NxNumber text={fixed ? clockDuration(gps.now - gps.trip.startedAt) : '--'} height={bigAux} color={pal.text} style={glyph} weightScale={1.25} /> : null}
           </View>
         ) : null}
       </View>
@@ -160,6 +166,7 @@ export default function Windshield() {
           </NxLabel>
         </View>
       ) : null}
+      <DimOverlay brightness={nx.brightness} />
       <HudDrawer mode="cam" open={drawer} onClose={() => setDrawer(false)} gps={gps} />
     </View>
   );

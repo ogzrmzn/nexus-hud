@@ -149,23 +149,67 @@ export const ACCENTS: { name: string; color: string }[] = [
 ];
 
 /** Tema + gündüz/gece + isteğe bağlı vurgu → kullanılacak palet */
+const hex2 = (n: number) => Math.round(Math.min(255, Math.max(0, n))).toString(16).padStart(2, '0');
+const rgb = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+
+/** İki renk arasında karışım (t=0 → a, t=1 → b) */
+export function mix(a: string, b: string, t: number): string {
+  if (a.length !== 7 || b.length !== 7) return a;
+  const x = rgb(a);
+  const y = rgb(b);
+  return '#' + x.map((v, i) => hex2(v + (y[i] - v) * t)).join('');
+}
+
+/** Rengi koyulaştır (k < 1) */
+export function shade(h: string, k: number): string {
+  if (h.length !== 7) return h;
+  return '#' + rgb(h).map((v) => hex2(v * k)).join('');
+}
+
+/**
+ * Tema + gündüz/gece + isteğe bağlı vurgu → kullanılacak palet.
+ * Gündüz: daha açık lacivert zemin, parlak ve yüksek kontrastlı renkler.
+ * Gece: neredeyse siyah zemin, kısık ve göz yormayan renkler.
+ */
 export function paletteFor(theme: NexusTheme, day: boolean, accent: string | null): NexusPalette {
-  const p = day ? theme.day : theme.night;
-  return accent ? { ...p, primary: accent } : p;
+  if (day) {
+    const p = theme.day;
+    return {
+      ...p,
+      bg: mix(p.bg, '#1B2A44', 0.65),
+      text: '#FFFFFF',
+      primary: accent ?? p.primary,
+      dim: mix(p.dim, '#FFFFFF', 0.35),
+      glass: alpha(accent ?? p.primary, 0.14),
+    };
+  }
+  const p = theme.night;
+  return {
+    ...p,
+    bg: shade(p.bg, 0.6),
+    text: shade(p.text, 0.72),
+    primary: shade(accent ?? p.primary, 0.75),
+    secondary: shade(p.secondary, 0.72),
+    holo: shade(p.holo, 0.75),
+    dim: shade(p.dim, 0.85),
+    glass: alpha(accent ?? p.primary, 0.05),
+  };
 }
 
 /**
  * Cam modu paleti: camda mor/koyu mavi kaybolur, gri zemin sis gibi görünür.
- * Bu yüzden zemin saf siyah, rakamlar beyaz ya da açık turkuaz; gece daha yumuşak.
+ * Zemin her zaman saf siyah. Gündüz: beyaz rakam, parlak turkuaz. Gece: kısık, yansıması göz almayan tonlar.
  */
 export function windshieldPalette(theme: NexusTheme, day: boolean, accent: string | null): NexusPalette {
-  const p = paletteFor(theme, day, accent);
+  const p = theme.day;
   return {
     ...p,
     bg: '#000000',
-    text: day ? '#FFFFFF' : '#CFF6FF',
-    primary: accent ?? (day ? '#5CF4FF' : '#3AC8E0'),
-    dim: day ? '#9FB4C4' : '#5E7A8C',
+    text: day ? '#FFFFFF' : '#7FA9B5',
+    primary: accent ? (day ? accent : shade(accent, 0.6)) : day ? '#5CF4FF' : '#21808F',
+    dim: day ? '#9FB4C4' : '#3E5560',
+    warn: day ? p.warn : shade(p.warn, 0.7),
+    danger: day ? p.danger : shade(p.danger, 0.8),
   };
 }
 

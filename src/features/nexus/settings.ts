@@ -5,8 +5,6 @@
 
 export type NexusThemeId = 'nexus' | 'quantum' | 'hyperdrive' | 'lightspeed' | 'nova' | 'neon';
 export type Orientation = 'yatay' | 'dikey';
-/** Cam modunda ekran içeriği */
-export type CamLayout = 'hiz' | 'saat' | 'yolculuk';
 /** Cam modunda aynalama: telefonun hangi kenarı cama bakıyor */
 export type MirrorAxis = 'ust' | 'alt';
 export type SpeedUnit = 'kmh' | 'mph';
@@ -28,13 +26,12 @@ export interface NexusSettings {
   mirror: boolean;
   /** Ayna yönü: 'ust' = üst kenar cama (sağ-sol çevrilir), 'alt' = alt kenar cama (alt-üst çevrilir) */
   mirrorAxis: MirrorAxis;
-  camLayout: CamLayout;
   /** Seçilen yön ekranı o yönde kilitler */
   camOrientation: Orientation;
   cockpitOrientation: Orientation;
   /** Ekranın kapanmasını engelle */
   keepAwake: boolean;
-  /** Cam modu parlaklığı 0.1–1; null = sistem parlaklığı */
+  /** HUD ekran parlaklığı 0.1–1; null = sistem parlaklığı (web'de ekran karartılarak uygulanır) */
   brightness: number | null;
   /** Hız uyarısı (seçili birimde); 0 = kapalı */
   speedAlert: number;
@@ -55,7 +52,6 @@ export const DEFAULT_NEXUS: NexusSettings = {
   dayNight: 'oto',
   mirror: true,
   mirrorAxis: 'ust',
-  camLayout: 'hiz',
   camOrientation: 'yatay',
   cockpitOrientation: 'yatay',
   keepAwake: true,
@@ -86,7 +82,6 @@ export function resolveNexus(raw: unknown): NexusSettings {
   out.speedAlert = Math.min(ALERT_MAX, Math.max(0, Math.round(Number(out.speedAlert) || 0)));
   if (out.lastView !== 'kokpit') out.lastView = 'cam';
   if (out.mirrorAxis !== 'alt') out.mirrorAxis = 'ust';
-  if (!['hiz', 'saat', 'yolculuk'].includes(out.camLayout)) out.camLayout = 'hiz';
   if (out.camOrientation !== 'dikey') out.camOrientation = 'yatay';
   if (out.cockpitOrientation !== 'dikey') out.cockpitOrientation = 'yatay';
   return out;

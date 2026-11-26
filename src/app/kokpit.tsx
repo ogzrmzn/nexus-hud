@@ -9,7 +9,7 @@ import Svg, { Line } from 'react-native-svg';
 import { GAUGE_ASPECT, Gauge } from '@/components/nexus/Gauges';
 import { CompassDial, GpsScan, SignalAlert, SignalIndicator } from '@/components/nexus/Instruments';
 import { NxNumber } from '@/components/nexus/NxNumber';
-import { HudDrawer } from '@/components/nexus/HudDrawer';
+import { DimOverlay, HudDrawer } from '@/components/nexus/HudDrawer';
 import { DataCell, HudButton, NxIcon, NxLabel } from '@/components/nexus/primitives';
 import { avgKmh } from '@/features/nexus/trip';
 import { clockDuration, clockText, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
@@ -63,7 +63,7 @@ export default function Cockpit() {
   const w = nx.widgets;
   const gps = useNexusGps({ demo: nx.demo, compass: w.compass });
   const weather = useNexusWeather(w.weather, gps.trip.last?.lat ?? null, gps.trip.last?.lon ?? null);
-  useHudSystem({ keepAwake: nx.keepAwake, orientation: nx.cockpitOrientation });
+  useHudSystem({ keepAwake: nx.keepAwake, brightness: nx.brightness, orientation: nx.cockpitOrientation });
   const [drawer, setDrawer] = useState(false);
 
   const landscape = width > height;
@@ -199,6 +199,7 @@ export default function Cockpit() {
           </NxLabel>
         </View>
       </Animated.View>
+      <DimOverlay brightness={nx.brightness} />
       <HudDrawer mode="kokpit" open={drawer} onClose={() => setDrawer(false)} gps={gps} />
     </View>
   );

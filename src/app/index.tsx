@@ -14,7 +14,7 @@ import { alpha, paletteFor, THEMES, type NexusPalette } from '@/features/nexus/t
 import { useNexus } from '@/features/nexus/useNexus';
 
 /** Ekranda görünen sürüm etiketi: telefonda hangi sürümün açıldığını doğrulamak için */
-const APP_BUILD = 'SÜRÜM 4 · 26.11';
+const APP_BUILD = 'SÜRÜM 5 · 26.11';
 
 /** Başlatma animasyonu uygulama oturumu başına bir kez */
 let booted = false;

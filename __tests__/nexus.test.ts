@@ -1,6 +1,6 @@
 import { clockDuration, distanceText, fromUnit, headingLabel, signalBars, toUnit, unwrapAngle } from '@/features/nexus/format';
 import { DEFAULT_NEXUS, isDay, resolveNexus, THEME_IDS } from '@/features/nexus/settings';
-import { alpha, THEMES, windshieldPalette } from '@/features/nexus/themes';
+import { alpha, paletteFor, THEMES, windshieldPalette } from '@/features/nexus/themes';
 import { confirmMax, deriveStatus, demoSpeed, LOST_AFTER_MS } from '@/features/nexus/useNexusGps';
 
 describe('NEXUS birimler ve biçim', () => {
@@ -44,13 +44,12 @@ describe('NEXUS ayarlar', () => {
     expect(r.widgets.distance).toBe(true);
   });
   it('kaldırılan tema ve bozuk yeni alanlar güvenli değere döner', () => {
-    const r = resolveNexus({ theme: 'cyber', speedAlert: 999, mirrorAxis: 'x', camOrientation: 'x', cockpitOrientation: 'x', camLayout: 'x' });
+    const r = resolveNexus({ theme: 'cyber', speedAlert: 999, mirrorAxis: 'x', camOrientation: 'x', cockpitOrientation: 'x' });
     expect(r.theme).toBe('nexus');
     expect(r.speedAlert).toBe(250);
     expect(r.mirrorAxis).toBe('ust');
     expect(r.camOrientation).toBe('yatay');
     expect(r.cockpitOrientation).toBe('yatay');
-    expect(r.camLayout).toBe('hiz');
   });
   it('gündüz/gece', () => {
     expect(isDay('gece', new Date(2026, 0, 1, 12))).toBe(false);
@@ -68,6 +67,16 @@ describe('NEXUS temalar', () => {
   });
   it('cam paleti her temada saf siyah', () => {
     for (const t of THEME_IDS) expect(windshieldPalette(THEMES[t], true, null).bg).toBe('#000000');
+  });
+  it('gece paleti gündüzden belirgin biçimde kısık', () => {
+    const lum = (h: string) => parseInt(h.slice(1, 3), 16) + parseInt(h.slice(3, 5), 16) + parseInt(h.slice(5, 7), 16);
+    for (const t of THEME_IDS) {
+      const d = paletteFor(THEMES[t], true, null);
+      const n = paletteFor(THEMES[t], false, null);
+      expect(lum(n.text)).toBeLessThan(lum(d.text) * 0.8);
+      expect(lum(n.bg)).toBeLessThan(lum(d.bg));
+    }
+    expect(windshieldPalette(THEMES.nexus, false, null).text).not.toBe(windshieldPalette(THEMES.nexus, true, null).text);
   });
   it('alpha', () => {
     expect(alpha('#FFFFFF', 0.5)).toBe('#FFFFFF80');
