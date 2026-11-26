@@ -135,7 +135,7 @@ export function ControlContent({ mode, onNavigate }: { mode?: 'cam' | 'kokpit'; 
 
   return (
     <>
-      <Section title="TEMA" hint={mode ? 'Temaya dokunun; ekran hemen o temaya geçer.' : undefined} pal={pal}>
+      <Section title="TEMA" hint={mode ? 'Temaya dokunun; ekran hemen o temaya geçer.' : 'Temaya dokunun; o tema açılır.'} pal={pal}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {(['windshield', ...THEME_IDS] as const).map((id) => {
             const isCam = id === 'windshield';
@@ -147,16 +147,17 @@ export function ControlContent({ mode, onNavigate }: { mode?: 'cam' | 'kokpit'; 
               <Pressable
                 key={id}
                 onPress={() => {
+                  // Seçilen tema hemen açılır: panelden ekran değişir, Ayarlar sayfasından tema ekranına geçilir
                   if (isCam) {
                     update({ lastView: 'cam' });
-                    if (mode === 'kokpit') {
+                    if (mode !== 'cam') {
                       onNavigate?.();
                       router.replace('/cam');
                     }
                     return;
                   }
                   update({ theme: id, lastView: 'kokpit' });
-                  if (mode === 'cam') {
+                  if (mode !== 'kokpit') {
                     onNavigate?.();
                     router.replace('/kokpit');
                   }
