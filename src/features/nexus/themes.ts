@@ -138,6 +138,18 @@ export function uiPalette(p: NexusPalette): NexusPalette {
 }
 
 /** Kullanıcının seçebileceği vurgu renkleri */
+/** Hız rakamı renkleri (null = temanın ana rengi) */
+export const SPEED_COLORS: { name: string; color: string | null }[] = [
+  { name: 'Beyaz', color: '#FFFFFF' },
+  { name: 'Tema', color: null },
+  { name: 'Turkuaz', color: '#3DFFE0' },
+  { name: 'Buz', color: '#A8E8FF' },
+  { name: 'Elektrik', color: '#22D3FF' },
+  { name: 'Amber', color: '#FFB547' },
+  { name: 'Yeşil', color: '#7CFF9B' },
+  { name: 'Plazma', color: '#FF6FE0' },
+];
+
 export const ACCENTS: { name: string; color: string }[] = [
   { name: 'Elektrik', color: '#22D3FF' },
   { name: 'Turkuaz', color: '#19F5D0' },
@@ -175,7 +187,7 @@ function dayPalette(theme: NexusTheme, accent: string | null): NexusPalette {
   const p = theme.day;
   return {
     ...p,
-    bg: mix(p.bg, '#1B2A44', 0.65),
+    bg: mix(p.bg, '#16233A', 0.35),
     text: '#FFFFFF',
     primary: accent ?? p.primary,
     dim: mix(p.dim, '#FFFFFF', 0.35),
@@ -187,13 +199,14 @@ function nightPalette(theme: NexusTheme, accent: string | null): NexusPalette {
   const p = theme.night;
   return {
     ...p,
+    // Gece: zemin koyulaşır, renkler canlı kalır (yalnızca hafifçe kısılır); göz almamayı parlaklık kısma sağlar
     bg: shade(p.bg, 0.6),
-    text: shade(p.text, 0.72),
-    primary: shade(accent ?? p.primary, 0.75),
-    secondary: shade(p.secondary, 0.72),
-    holo: shade(p.holo, 0.75),
-    dim: shade(p.dim, 0.85),
-    glass: alpha(accent ?? p.primary, 0.05),
+    text: shade(p.text, 0.94),
+    primary: shade(accent ?? p.primary, 0.92),
+    secondary: shade(p.secondary, 0.9),
+    holo: shade(p.holo, 0.92),
+    dim: shade(p.dim, 1.15),
+    glass: alpha(accent ?? p.primary, 0.07),
   };
 }
 

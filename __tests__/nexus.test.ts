@@ -63,13 +63,13 @@ describe('NEXUS temalar', () => {
   it('cam paleti her temada saf siyah', () => {
     for (const t of THEME_IDS) expect(windshieldPalette(THEMES[t], true, null).bg).toBe('#000000');
   });
-  it('gece paleti gündüzden belirgin biçimde kısık', () => {
+  it('gece: zemin koyu, renkler canlı (en fazla hafif kısık)', () => {
     const lum = (h: string) => parseInt(h.slice(1, 3), 16) + parseInt(h.slice(3, 5), 16) + parseInt(h.slice(5, 7), 16);
     for (const t of THEME_IDS) {
       const d = paletteFor(THEMES[t], true, null);
       const n = paletteFor(THEMES[t], false, null);
-      expect(lum(n.text)).toBeLessThan(lum(d.text) * 0.8);
       expect(lum(n.bg)).toBeLessThan(lum(d.bg));
+      expect(lum(n.primary)).toBeGreaterThan(lum(THEMES[t].night.primary) * 0.85);
     }
     // Windshield hız rakamı gündüz de gece de beyaz
     expect(windshieldPalette(THEMES.nexus, false, null).text).toBe('#FFFFFF');
@@ -141,6 +141,6 @@ describe('Işık: güneş saatleri', () => {
   it('gece parlaklığı kısılır, gündüz ayar aynen', () => {
     expect(effectiveBrightness(null, 1)).toBeNull();
     expect(effectiveBrightness(0.8, 1)).toBe(0.8);
-    expect(effectiveBrightness(null, 0)).toBe(0.55);
+    expect(effectiveBrightness(null, 0)).toBe(0.8);
   });
 });

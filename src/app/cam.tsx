@@ -62,7 +62,7 @@ export default function Windshield() {
   const numH = Math.min(H * (extras ? 0.44 : 0.56), (W * 0.84) / ratio) * nx.gaugeScale;
   const auxH = Math.max(22, Math.min(40, H * 0.1));
   const bigAux = Math.max(30, Math.min(64, H * 0.13));
-  const color = speed == null ? pal.dim : over ? pal.danger : pal.text;
+  const color = speed == null ? pal.dim : over ? pal.danger : (nx.speedColor ?? pal.primary);
   const fixed = gps.lastFixAt != null;
 
   const needsAction = gps.status === 'reddedildi' || gps.status === 'servis-kapali';

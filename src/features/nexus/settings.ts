@@ -17,6 +17,8 @@ export interface NexusSettings {
   theme: NexusThemeId;
   /** Vurgu rengi; null = temanın kendi rengi */
   accent: string | null;
+  /** Hız rakamının rengi; null = temanın ana rengi (varsayılan beyaz) */
+  speedColor: string | null;
   unit: SpeedUnit;
   /** Hız göstergesi boyutu (0.75 – 1.15) */
   gaugeScale: number;
@@ -50,6 +52,7 @@ export interface NexusSettings {
 export const DEFAULT_NEXUS: NexusSettings = {
   theme: 'nexus',
   accent: null,
+  speedColor: '#FFFFFF',
   unit: 'kmh',
   gaugeScale: 1,
   widgets: { clock: true, tripTime: true, avg: true, max: true, distance: true, compass: true, gps: true, weather: false },
@@ -86,6 +89,7 @@ export function resolveNexus(raw: unknown): NexusSettings {
   if (!['oto', 'gunduz', 'gece'].includes(out.dayNight)) out.dayNight = 'oto';
   if (out.motion !== 'az') out.motion = 'tam';
   out.speedAlert = Math.min(ALERT_MAX, Math.max(0, Math.round(Number(out.speedAlert) || 0)));
+  if (out.speedColor !== null && !/^#[0-9A-Fa-f]{6}$/.test(String(out.speedColor))) out.speedColor = '#FFFFFF';
   if (out.lastView !== 'kokpit') out.lastView = 'cam';
   const lp = out.lastPos as { lat?: unknown; lon?: unknown } | null;
   if (!lp || typeof lp.lat !== 'number' || typeof lp.lon !== 'number') out.lastPos = null;

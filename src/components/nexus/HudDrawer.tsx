@@ -5,7 +5,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { unitLabel } from '@/features/nexus/format';
 import { ALERT_MAX, ALERT_STEP, DEFAULT_NEXUS, THEME_IDS, type DayNight, type Orientation, type WidgetKey } from '@/features/nexus/settings';
-import { ACCENTS, alpha, THEMES, type NexusPalette } from '@/features/nexus/themes';
+import { ACCENTS, alpha, SPEED_COLORS, THEMES, type NexusPalette } from '@/features/nexus/themes';
 import { isFullscreen, lockOrientationWeb, toggleFullscreen } from '@/features/nexus/useHudSystem';
 import { hhmm } from '@/features/nexus/sun';
 import { useNexus } from '@/features/nexus/useNexus';
@@ -78,7 +78,7 @@ export function ControlContent({ mode, onNavigate }: { mode?: 'cam' | 'kokpit'; 
     nx.dayNight === 'gunduz'
       ? 'Parlak, yüksek kontrastlı renkler; gündüz güneşinde okunaklı.'
       : nx.dayNight === 'gece'
-        ? 'Kısık, camda göz almayan renkler; parlaklık da kendiliğinden kısılır.'
+        ? 'Koyu zemin, canlı ama göz almayan renkler; parlaklık hafifçe kısılır.'
         : sun?.polar
           ? `Konumunuzda güneş bugün ${sun.polar === 'day' ? 'batmıyor' : 'doğmuyor'} · ${now}.`
           : sun
@@ -277,7 +277,46 @@ export function ControlContent({ mode, onNavigate }: { mode?: 'cam' | 'kokpit'; 
         />
       </Section>
 
-      <Section title="RENK" pal={pal}>
+      <Section title="HIZ RENGİ" hint="Yalnızca hız rakamının rengi; temanın halka, çizgi ve akış renkleri ayrı kalır." pal={pal}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          {SPEED_COLORS.map((c) => {
+            const on = nx.speedColor === c.color;
+            const sw = c.color ?? THEMES[nx.theme].night.primary;
+            return (
+              <Pressable
+                key={c.name}
+                onPress={() => update({ speedColor: c.color })}
+                accessibilityRole="button"
+                accessibilityLabel={`Hız rengi ${c.name}`}
+                accessibilityState={{ selected: on }}
+                style={{ alignItems: 'center', gap: 4, width: 46 }}
+              >
+                <View
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 6,
+                    backgroundColor: '#05070C',
+                    borderWidth: on ? 2 : 1,
+                    borderColor: on ? pal.text : alpha(pal.primary, 0.3),
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <NxLabel color={sw} size={15} spacing={0} weight="800">
+                    88
+                  </NxLabel>
+                </View>
+                <NxLabel color={on ? pal.text : pal.dim} size={7.5} spacing={0.3}>
+                  {c.name}
+                </NxLabel>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Section>
+
+      <Section title="TEMA RENGİ" hint="Halka, çizgi ve akışların ana rengi." pal={pal}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           {[{ name: 'Tema', color: null as string | null }, ...ACCENTS].map((a) => {
             const on = nx.accent === a.color;

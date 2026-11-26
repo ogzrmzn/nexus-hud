@@ -118,9 +118,11 @@ export default function Cockpit() {
     return undefined;
   };
 
+  // Hız rakamı rengi temadan ayrı seçilir (varsayılan beyaz)
+  const speedPal = { ...pal, text: nx.speedColor ?? pal.primary };
   const gauge = (aw: number, ah: number) => {
     const gw = Math.min(aw, ah / GAUGE_ASPECT[theme.gauge]) * nx.gaugeScale * 0.97;
-    return <Gauge kind={theme.gauge} speed={speed} max={gaugeMax(nx.unit)} width={gw} pal={pal} glyph={theme.glyph} unit={unitL} over={over} reduced={reduced} center={centerFor(gw)} />;
+    return <Gauge kind={theme.gauge} speed={speed} max={gaugeMax(nx.unit)} width={gw} pal={speedPal} glyph={theme.glyph} unit={unitL} over={over} reduced={reduced} center={centerFor(gw)} />;
   };
 
   const dial = (size: number) => (w.compass ? <CompassDial heading={gps.heading} size={size} pal={pal} glyph={theme.glyph} reduced={reduced} /> : null);

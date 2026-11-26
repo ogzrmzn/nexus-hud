@@ -56,10 +56,10 @@ export function daylightLevel(now: Date, pos: { lat: number; lon: number } | nul
   return Math.min(ramp(t, rise), 1 - ramp(t, set));
 }
 
-/** Gece parlaklığı: gündüz ayarı aynen, gece en fazla %55'e kısılır (camda göz almasın) */
+/** Gece parlaklığı: gündüz ayarı aynen, gece hafifçe (%80'e) kısılır; renkler soluklaşmasın diye daha fazla değil */
 export function effectiveBrightness(setting: number | null, level: number): number | null {
   if (level >= 0.999) return setting;
-  const v = (setting ?? 1) * (0.55 + 0.45 * level);
+  const v = (setting ?? 1) * (0.8 + 0.2 * level);
   return Math.round(v * 100) / 100;
 }
 
