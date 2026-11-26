@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useEffect, useState, type ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type ScrollViewInstance } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { unitLabel } from '@/features/nexus/format';
@@ -12,6 +12,9 @@ import { useNexus } from '@/features/nexus/useNexus';
 import { HudButton, NxIcon, NxLabel, NxSwitch, OptionCards, Segmented, Stepper } from './primitives';
 
 const BRIGHT_STEPS = [0.1, 0.25, 0.5, 0.75, 1];
+
+/** Panelin kaldığı kaydırma yeri (uygulama açık kaldıkça hatırlanır; panel kapanıp açılınca oradan devam eder) */
+let lastPanelScroll = 0;
 
 const WIDGETS: [WidgetKey, string][] = [
   ['clock', 'Saat'],
@@ -408,9 +411,14 @@ export function HudDrawer({ mode, open, onClose }: { mode: 'cam' | 'kokpit'; ope
   const x = useSharedValue(1);
   const [mounted, setMounted] = useState(open);
   const [fs, setFs] = useState(isFullscreen());
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const restored = useRef(false);
 
   useEffect(() => {
-    if (open) setMounted(true);
+    if (open) {
+      restored.current = false;
+      setMounted(true);
+    }
     x.value = withTiming(open ? 0 : 1, { duration: 260, easing: Easing.out(Easing.cubic) });
     if (!open) {
       const t = setTimeout(() => setMounted(false), 280);
@@ -462,7 +470,21 @@ export function HudDrawer({ mode, open, onClose }: { mode: 'cam' | 'kokpit'; ope
           ) : null}
           <HudButton icon="close" pal={pal} size={40} onPress={onClose} label={undefined} />
         </View>
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 28 }}>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 28 }}
+          scrollEventThrottle={32}
+          onScroll={(e) => {
+            lastPanelScroll = e.nativeEvent.contentOffset.y;
+          }}
+          onContentSizeChange={() => {
+            // İlk çizimde kaldığı yere dön (bir kez)
+            if (!restored.current && lastPanelScroll > 0) {
+              restored.current = true;
+              scrollRef.current?.scrollTo({ y: lastPanelScroll, animated: false });
+            }
+          }}
+        >
           <ControlContent mode={mode} onNavigate={onClose} />
         </ScrollView>
       </Animated.View>
