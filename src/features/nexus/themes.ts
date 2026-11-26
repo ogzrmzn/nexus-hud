@@ -171,18 +171,19 @@ export function shade(h: string, k: number): string {
  * Gündüz: daha açık lacivert zemin, parlak ve yüksek kontrastlı renkler.
  * Gece: neredeyse siyah zemin, kısık ve göz yormayan renkler.
  */
-export function paletteFor(theme: NexusTheme, day: boolean, accent: string | null): NexusPalette {
-  if (day) {
-    const p = theme.day;
-    return {
-      ...p,
-      bg: mix(p.bg, '#1B2A44', 0.65),
-      text: '#FFFFFF',
-      primary: accent ?? p.primary,
-      dim: mix(p.dim, '#FFFFFF', 0.35),
-      glass: alpha(accent ?? p.primary, 0.14),
-    };
-  }
+function dayPalette(theme: NexusTheme, accent: string | null): NexusPalette {
+  const p = theme.day;
+  return {
+    ...p,
+    bg: mix(p.bg, '#1B2A44', 0.65),
+    text: '#FFFFFF',
+    primary: accent ?? p.primary,
+    dim: mix(p.dim, '#FFFFFF', 0.35),
+    glass: alpha(accent ?? p.primary, 0.14),
+  };
+}
+
+function nightPalette(theme: NexusTheme, accent: string | null): NexusPalette {
   const p = theme.night;
   return {
     ...p,
@@ -196,21 +197,47 @@ export function paletteFor(theme: NexusTheme, day: boolean, accent: string | nul
   };
 }
 
+/** İki palet arasında yumuşak geçiş (0 = gece, 1 = gündüz) */
+function blend(n: NexusPalette, d: NexusPalette, level: number): NexusPalette {
+  if (level >= 1) return d;
+  if (level <= 0) return n;
+  const out = { ...n };
+  (Object.keys(n) as (keyof NexusPalette)[]).forEach((k) => {
+    const a = n[k];
+    const b = d[k];
+    out[k] = a.startsWith('#') && a.length === 7 && b.startsWith('#') && b.length === 7 ? mix(a, b, level) : level >= 0.5 ? b : a;
+  });
+  return out;
+}
+
+/**
+ * Tema + ışık seviyesi + isteğe bağlı vurgu → kullanılacak palet.
+ * Gündüz (1): açık lacivert zemin, parlak ve yüksek kontrastlı renkler.
+ * Gece (0): neredeyse siyah zemin, kısık ve göz yormayan renkler. Aradaki değerler yumuşak geçiştir.
+ */
+export function paletteFor(theme: NexusTheme, light: boolean | number, accent: string | null): NexusPalette {
+  const level = typeof light === 'number' ? light : light ? 1 : 0;
+  return blend(nightPalette(theme, accent), dayPalette(theme, accent), level);
+}
+
 /**
  * Cam modu paleti: camda mor/koyu mavi kaybolur, gri zemin sis gibi görünür.
  * Zemin her zaman saf siyah. Gündüz: beyaz rakam, parlak turkuaz. Gece: kısık, yansıması göz almayan tonlar.
  */
-export function windshieldPalette(theme: NexusTheme, day: boolean, accent: string | null): NexusPalette {
+export function windshieldPalette(theme: NexusTheme, light: boolean | number, accent: string | null): NexusPalette {
+  const level = typeof light === 'number' ? light : light ? 1 : 0;
   const p = theme.day;
-  return {
+  const day: NexusPalette = { ...p, bg: '#000000', text: '#FFFFFF', primary: accent ?? '#5CF4FF', dim: '#9FB4C4' };
+  const night: NexusPalette = {
     ...p,
     bg: '#000000',
-    text: day ? '#FFFFFF' : '#7FA9B5',
-    primary: accent ? (day ? accent : shade(accent, 0.6)) : day ? '#5CF4FF' : '#21808F',
-    dim: day ? '#9FB4C4' : '#3E5560',
-    warn: day ? p.warn : shade(p.warn, 0.7),
-    danger: day ? p.danger : shade(p.danger, 0.8),
+    text: '#7FA9B5',
+    primary: accent ? shade(accent, 0.6) : '#21808F',
+    dim: '#3E5560',
+    warn: shade(p.warn, 0.7),
+    danger: shade(p.danger, 0.8),
   };
+  return blend(night, day, level);
 }
 
 /** #RRGGBB + opaklık */

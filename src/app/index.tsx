@@ -14,7 +14,7 @@ import { alpha, paletteFor, THEMES, type NexusPalette } from '@/features/nexus/t
 import { useNexus } from '@/features/nexus/useNexus';
 
 /** Ekranda görünen sürüm etiketi: telefonda hangi sürümün açıldığını doğrulamak için */
-const APP_BUILD = 'SÜRÜM 8 · 26.11';
+const APP_BUILD = 'SÜRÜM 9 · 26.11';
 
 /** Başlatma animasyonu uygulama oturumu başına bir kez */
 let booted = false;
@@ -116,7 +116,7 @@ function ThemeCard({
 
 /** Başlangıç: tek sayfada Windshield HUD ve tüm kokpit temaları */
 export default function NexusStart() {
-  const { upal: pal, pal: hudPal, wpal, nx, day, update } = useNexus();
+  const { upal: pal, pal: hudPal, wpal, nx, light, update } = useNexus();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const sysReduced = useReducedMotion();
@@ -214,7 +214,7 @@ export default function NexusStart() {
             />
             {THEME_IDS.map((id, i) => {
               const t = THEMES[id];
-              const tp = id === nx.theme ? hudPal : paletteFor(t, day, null);
+              const tp = id === nx.theme ? hudPal : paletteFor(t, light, null);
               const gw = Math.min(cardW - 24, 170 / GAUGE_ASPECT[t.gauge]);
               return (
                 <ThemeCard

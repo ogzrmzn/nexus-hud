@@ -41,6 +41,8 @@ export interface NexusSettings {
   motion: Motion;
   /** Açıkça işaretlenen demo verisi (gerçek GPS yerine) */
   demo: boolean;
+  /** Son bilinen konum (yaklaşık; güneşe göre ışık için) */
+  lastPos: { lat: number; lon: number } | null;
   /** Son açılan ekran (ana sayfada işaretlenir) */
   lastView: 'cam' | 'kokpit';
 }
@@ -63,6 +65,7 @@ export const DEFAULT_NEXUS: NexusSettings = {
   motion: 'tam',
   demo: false,
   lastView: 'cam',
+  lastPos: null,
 };
 
 export const THEME_IDS: NexusThemeId[] = ['nexus', 'hyperdrive', 'lightspeed', 'nova', 'neon', 'quantum'];
@@ -84,16 +87,10 @@ export function resolveNexus(raw: unknown): NexusSettings {
   if (out.motion !== 'az') out.motion = 'tam';
   out.speedAlert = Math.min(ALERT_MAX, Math.max(0, Math.round(Number(out.speedAlert) || 0)));
   if (out.lastView !== 'kokpit') out.lastView = 'cam';
+  const lp = out.lastPos as { lat?: unknown; lon?: unknown } | null;
+  if (!lp || typeof lp.lat !== 'number' || typeof lp.lon !== 'number') out.lastPos = null;
   if (out.mirrorAxis !== 'alt') out.mirrorAxis = 'ust';
   if (out.camOrientation !== 'dikey') out.camOrientation = 'yatay';
   if (out.cockpitOrientation !== 'dikey') out.cockpitOrientation = 'yatay';
   return out;
-}
-
-/** "oto": 07:00–19:00 gündüz */
-export function isDay(mode: DayNight, now = new Date()): boolean {
-  if (mode === 'gunduz') return true;
-  if (mode === 'gece') return false;
-  const h = now.getHours();
-  return h >= 7 && h < 19;
 }

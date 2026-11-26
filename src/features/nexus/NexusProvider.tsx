@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { resolveNexus, type NexusSettings } from './settings';
 import { loadRaw, saveRaw } from './storage';
 
@@ -6,6 +6,8 @@ const KEY = 'nexus.settings';
 
 interface Ctx {
   nx: NexusSettings;
+  /** Dakikada bir güncellenen saat (güneşe göre ışık geçişi için) */
+  now: number;
   update: (patch: Partial<NexusSettings>) => void;
 }
 
@@ -30,7 +32,12 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
-  return <NexusContext.Provider value={{ nx, update }}>{children}</NexusContext.Provider>;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(t);
+  }, []);
+  return <NexusContext.Provider value={{ nx, update, now }}>{children}</NexusContext.Provider>;
 }
 
 export function useNexusSettings(): Ctx {

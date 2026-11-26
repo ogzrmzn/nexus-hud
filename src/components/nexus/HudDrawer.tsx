@@ -7,6 +7,7 @@ import { unitLabel } from '@/features/nexus/format';
 import { ALERT_MAX, ALERT_STEP, DEFAULT_NEXUS, THEME_IDS, type DayNight, type Orientation, type WidgetKey } from '@/features/nexus/settings';
 import { ACCENTS, alpha, THEMES, type NexusPalette } from '@/features/nexus/themes';
 import { isFullscreen, lockOrientationWeb, toggleFullscreen } from '@/features/nexus/useHudSystem';
+import { hhmm } from '@/features/nexus/sun';
 import { useNexus } from '@/features/nexus/useNexus';
 import { HudButton, NxIcon, NxLabel, NxSwitch, OptionCards, Segmented, Stepper } from './primitives';
 
@@ -71,7 +72,18 @@ function SwitchRow({ label, hint, value, onChange, pal }: { label: string; hint?
  * mode: hangi HUD ekranından açıldığı (tema seçimi o ekrana geçiş yapar); yoksa Ayarlar sayfası.
  */
 export function ControlContent({ mode, onNavigate }: { mode?: 'cam' | 'kokpit'; onNavigate?: () => void }) {
-  const { nx, upal: pal, day, update } = useNexus();
+  const { nx, upal: pal, light, sun, update } = useNexus();
+  const now = light >= 0.999 ? 'şu an gündüz' : light <= 0.001 ? 'şu an gece' : 'şu an geçişte';
+  const lightHint =
+    nx.dayNight === 'gunduz'
+      ? 'Parlak, yüksek kontrastlı renkler; gündüz güneşinde okunaklı.'
+      : nx.dayNight === 'gece'
+        ? 'Kısık, camda göz almayan renkler; parlaklık da kendiliğinden kısılır.'
+        : sun?.polar
+          ? `Konumunuzda güneş bugün ${sun.polar === 'day' ? 'batmıyor' : 'doğmuyor'} · ${now}.`
+          : sun
+            ? `Gün doğumu ${hhmm(sun.sunrise)} · gün batımı ${hhmm(sun.sunset)} (konumunuza göre, internetsiz hesaplanır). Geçişte renkler ve parlaklık yavaşça değişir · ${now}.`
+            : `Konum henüz bilinmiyor; bir sürüş ekranında GPS bağlanınca güneş saatleri hesaplanır. Şimdilik 07:00 / 19:00 · ${now}.`;
   const web = Platform.OS === 'web';
   const alertTxt = nx.speedAlert === 0 ? 'KAPALI' : `${nx.speedAlert} ${unitLabel(nx.unit)}`;
   const bIdx = nx.brightness == null ? -1 : BRIGHT_STEPS.findIndex((v) => Math.abs(v - nx.brightness!) < 0.01);
@@ -252,19 +264,15 @@ export function ControlContent({ mode, onNavigate }: { mode?: 'cam' | 'kokpit'; 
         />
       </Section>
 
-      <Section
-        title="GÜNDÜZ / GECE"
-        hint={`Gündüz: parlak, yüksek kontrast. Gece: kısık, göz yormayan renkler. Oto: 07:00–19:00 gündüz (şu an ${day ? 'gündüz' : 'gece'}).`}
-        pal={pal}
-      >
-        <Segmented<DayNight>
+      <Section title="IŞIK" hint={lightHint} pal={pal}>
+        <OptionCards<DayNight>
           pal={pal}
           value={nx.dayNight}
           onChange={(v) => update({ dayNight: v })}
           options={[
-            { value: 'oto', label: 'OTO' },
-            { value: 'gunduz', label: 'GÜNDÜZ' },
-            { value: 'gece', label: 'GECE' },
+            { value: 'gunduz', label: 'GÜNDÜZ', icon: 'white-balance-sunny' },
+            { value: 'gece', label: 'GECE', icon: 'weather-night' },
+            { value: 'oto', label: 'GÜNEŞE GÖRE', icon: 'theme-light-dark' },
           ]}
         />
       </Section>

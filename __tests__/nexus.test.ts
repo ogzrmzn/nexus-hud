@@ -1,5 +1,5 @@
 import { clockDuration, distanceText, fromUnit, headingLabel, signalBars, toUnit, unwrapAngle } from '@/features/nexus/format';
-import { DEFAULT_NEXUS, isDay, resolveNexus, THEME_IDS } from '@/features/nexus/settings';
+import { DEFAULT_NEXUS, resolveNexus, THEME_IDS } from '@/features/nexus/settings';
 import { alpha, paletteFor, THEMES, windshieldPalette } from '@/features/nexus/themes';
 import { confirmMax, deriveStatus, demoSpeed, LOST_AFTER_MS } from '@/features/nexus/useNexusGps';
 
@@ -50,11 +50,6 @@ describe('NEXUS ayarlar', () => {
     expect(r.mirrorAxis).toBe('ust');
     expect(r.camOrientation).toBe('yatay');
     expect(r.cockpitOrientation).toBe('yatay');
-  });
-  it('gündüz/gece', () => {
-    expect(isDay('gece', new Date(2026, 0, 1, 12))).toBe(false);
-    expect(isDay('oto', new Date(2026, 0, 1, 12))).toBe(true);
-    expect(isDay('oto', new Date(2026, 0, 1, 22))).toBe(false);
   });
 });
 
@@ -113,5 +108,36 @@ describe('Ekran yönü kilidi', () => {
     expect(exactWebOrientation('yatay', 'portrait-primary')).toBe('landscape-primary');
     expect(exactWebOrientation('dikey', 'landscape-primary')).toBe('portrait-primary');
     expect(exactWebOrientation('dikey', undefined)).toBe('portrait-primary');
+  });
+});
+
+describe('Işık: güneş saatleri', () => {
+  const { sunTimes, daylightLevel, effectiveBrightness } = jest.requireActual('@/features/nexus/sun');
+  const utc = (ms: number) => new Date(ms).toISOString().slice(11, 16);
+  it('İstanbul, 26 Kasım: doğuş ~05:05 UTC (08:05), batış ~14:39 UTC (17:39)', () => {
+    const s = sunTimes(new Date(2026, 10, 26, 12), 41.01, 28.98);
+    const rise = new Date(s.sunrise).getUTCHours() * 60 + new Date(s.sunrise).getUTCMinutes();
+    const set = new Date(s.sunset).getUTCHours() * 60 + new Date(s.sunset).getUTCMinutes();
+    expect(Math.abs(rise - (5 * 60 + 5))).toBeLessThanOrEqual(5);
+    expect(Math.abs(set - (14 * 60 + 39))).toBeLessThanOrEqual(5);
+    expect(utc(s.sunrise) < utc(s.sunset)).toBe(true);
+  });
+  it('kutup gecesi/günü', () => {
+    expect(sunTimes(new Date(2026, 11, 21, 12), 78, 15).polar).toBe('night');
+    expect(sunTimes(new Date(2026, 5, 21, 12), 78, 15).polar).toBe('day');
+  });
+  it('ışık seviyesi: gündüz 1, gece 0, geçişte arada', () => {
+    const pos = { lat: 41.01, lon: 28.98 };
+    const s = sunTimes(new Date(2026, 10, 26, 12), pos.lat, pos.lon);
+    expect(daylightLevel(new Date(s.sunrise + 3600000), pos)).toBe(1);
+    expect(daylightLevel(new Date(s.sunset + 3600000), pos)).toBe(0);
+    const mid = daylightLevel(new Date(s.sunset), pos);
+    expect(mid).toBeGreaterThan(0.3);
+    expect(mid).toBeLessThan(0.7);
+  });
+  it('gece parlaklığı kısılır, gündüz ayar aynen', () => {
+    expect(effectiveBrightness(null, 1)).toBeNull();
+    expect(effectiveBrightness(0.8, 1)).toBe(0.8);
+    expect(effectiveBrightness(null, 0)).toBe(0.55);
   });
 });

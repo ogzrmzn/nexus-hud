@@ -15,7 +15,7 @@ import { avgKmh } from '@/features/nexus/trip';
 import { clockDuration, clockText, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
 import { alpha, type NexusPalette } from '@/features/nexus/themes';
 import { useHudSystem } from '@/features/nexus/useHudSystem';
-import { useNexus } from '@/features/nexus/useNexus';
+import { useNexus, useRememberPosition } from '@/features/nexus/useNexus';
 import { STATUS_TEXT, useNexusGps } from '@/features/nexus/useNexusGps';
 import { useNexusWeather } from '@/features/nexus/useNexusWeather';
 
@@ -53,7 +53,7 @@ function Backdrop({ pal, width, height }: { pal: NexusPalette; width: number; he
  * Telefonun kendi ekranında tam veri. Tema; göstergenin geometrisini, veri yerleşimini ve pusula biçimini belirler.
  */
 export default function Cockpit() {
-  const { nx, theme, pal } = useNexus();
+  const { nx, theme, pal, brightness } = useNexus();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const sysReduced = useReducedMotion();
@@ -63,7 +63,8 @@ export default function Cockpit() {
   const w = nx.widgets;
   const gps = useNexusGps({ demo: nx.demo, compass: w.compass });
   const weather = useNexusWeather(w.weather, gps.trip.last?.lat ?? null, gps.trip.last?.lon ?? null);
-  useHudSystem({ keepAwake: nx.keepAwake, brightness: nx.brightness, orientation: nx.cockpitOrientation });
+  useHudSystem({ keepAwake: nx.keepAwake, brightness, orientation: nx.cockpitOrientation });
+  useRememberPosition(nx.demo ? null : gps.trip.last);
   const [drawer, setDrawer] = useState(false);
 
   const landscape = width > height;
@@ -206,7 +207,7 @@ export default function Cockpit() {
           </NxLabel>
         </View>
       </Animated.View>
-      <DimOverlay brightness={nx.brightness} />
+      <DimOverlay brightness={brightness} />
       <HudDrawer mode="kokpit" open={drawer} onClose={() => setDrawer(false)} />
     </View>
   );

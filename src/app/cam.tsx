@@ -11,7 +11,7 @@ import { HudButton, NxLabel } from '@/components/nexus/primitives';
 import { clockDuration, clockText, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
 import { alpha } from '@/features/nexus/themes';
 import { useHudSystem } from '@/features/nexus/useHudSystem';
-import { useNexus } from '@/features/nexus/useNexus';
+import { useNexus, useRememberPosition } from '@/features/nexus/useNexus';
 import { STATUS_TEXT, useNexusGps } from '@/features/nexus/useNexusGps';
 
 
@@ -21,13 +21,14 @@ import { STATUS_TEXT, useNexusGps } from '@/features/nexus/useNexusGps';
  * tek büyük hız. Glow, sürekli animasyon ve küçük yazı yok: camda çift görüntü yapar ve göz yorar.
  */
 export default function Windshield() {
-  const { nx, wpal: pal } = useNexus();
+  const { nx, wpal: pal, brightness } = useNexus();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const gps = useNexusGps({ demo: nx.demo, compass: false });
   const [controls, setControls] = useState(true);
   const [drawer, setDrawer] = useState(false);
-  useHudSystem({ keepAwake: nx.keepAwake, brightness: nx.brightness, orientation: nx.camOrientation });
+  useHudSystem({ keepAwake: nx.keepAwake, brightness, orientation: nx.camOrientation });
+  useRememberPosition(nx.demo ? null : gps.trip.last);
 
   const speed = gps.speedKmh == null ? null : Math.round(toUnit(gps.speedKmh, nx.unit));
   const over = nx.speedAlert > 0 && speed != null && speed > nx.speedAlert;
@@ -147,16 +148,21 @@ export default function Windshield() {
             position: 'absolute',
             left: insets.left + 12,
             right: insets.right + 12,
-            top: insets.top + 8,
+            top: insets.top + 6,
+            // Düz siyah şerit: aynalı görüntüde altta kalan rakamlar düğmelerin arkasından görünmesin
+            padding: 6,
+            borderRadius: 26,
+            backgroundColor: 'rgba(0,0,0,0.94)',
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
           }}
         >
-          <HudButton icon="arrow-left" pal={pal} label="ÇIKIŞ" onPress={() => router.back()} />
+          <HudButton icon="arrow-left" pal={pal} size={36} onPress={() => router.back()} />
+          {(gps.speedKmh ?? 0) > 10 ? null : <HudButton icon="restart" pal={pal} size={36} onPress={gps.resetTrip} />}
           <View style={{ flex: 1 }} />
           {needsAction ? <HudButton icon="crosshairs-gps" pal={pal} label={gps.status === 'reddedildi' ? 'İZİN VER' : 'TEKRAR DENE'} active onPress={gps.retry} /> : null}
-          <HudButton icon="menu" pal={pal} label="PANEL" active onPress={() => setDrawer(true)} />
+          <HudButton icon="menu" pal={pal} size={36} label="PANEL" active onPress={() => setDrawer(true)} />
         </View>
       ) : null}
       {controls && !drawer ? (
@@ -166,7 +172,7 @@ export default function Windshield() {
           </NxLabel>
         </View>
       ) : null}
-      <DimOverlay brightness={nx.brightness} />
+      <DimOverlay brightness={brightness} />
       <HudDrawer mode="cam" open={drawer} onClose={() => setDrawer(false)} />
     </View>
   );
