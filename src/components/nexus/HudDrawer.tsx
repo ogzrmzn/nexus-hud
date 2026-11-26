@@ -8,7 +8,6 @@ import { ALERT_MAX, ALERT_STEP, DEFAULT_NEXUS, THEME_IDS, type DayNight, type Or
 import { ACCENTS, alpha, THEMES, type NexusPalette } from '@/features/nexus/themes';
 import { isFullscreen, toggleFullscreen } from '@/features/nexus/useHudSystem';
 import { useNexus } from '@/features/nexus/useNexus';
-import { STATUS_TEXT, type NexusGps } from '@/features/nexus/useNexusGps';
 import { HudButton, NxIcon, NxLabel, NxSwitch, OptionCards, Segmented, Stepper } from './primitives';
 
 const BRIGHT_STEPS = [0.1, 0.25, 0.5, 0.75, 1];
@@ -71,7 +70,7 @@ function SwitchRow({ label, hint, value, onChange, pal }: { label: string; hint?
  * Tüm ayarlar tek yerde: sağdan açılan panel ve Ayarlar sayfası aynı içeriği kullanır.
  * mode: hangi HUD ekranından açıldığı (tema seçimi o ekrana geçiş yapar); yoksa Ayarlar sayfası.
  */
-export function ControlContent({ mode, gps, onNavigate }: { mode?: 'cam' | 'kokpit'; gps?: NexusGps; onNavigate?: () => void }) {
+export function ControlContent({ mode, onNavigate }: { mode?: 'cam' | 'kokpit'; onNavigate?: () => void }) {
   const { nx, upal: pal, day, update } = useNexus();
   const web = Platform.OS === 'web';
   const alertTxt = nx.speedAlert === 0 ? 'KAPALI' : `${nx.speedAlert} ${unitLabel(nx.unit)}`;
@@ -97,6 +96,26 @@ export function ControlContent({ mode, gps, onNavigate }: { mode?: 'cam' | 'kokp
         options={[
           { value: 'yatay', label: 'YATAY', icon: 'phone-rotate-landscape' },
           { value: 'dikey', label: 'DİKEY', icon: 'phone-rotate-portrait' },
+        ]}
+      />
+    </View>
+  );
+
+  const mirrorRow = (label: string, value: 'normal' | 'ust' | 'alt', set: (v: 'normal' | 'ust' | 'alt') => void) => (
+    <View style={{ gap: 6 }}>
+      {label ? (
+        <NxLabel color={pal.dim} size={9} spacing={1.5}>
+          {label}
+        </NxLabel>
+      ) : null}
+      <Segmented
+        pal={pal}
+        value={value}
+        onChange={set}
+        options={[
+          { value: 'normal', label: 'NORMAL' },
+          { value: 'ust', label: 'ÜST KENAR CAMA' },
+          { value: 'alt', label: 'ALT KENAR CAMA' },
         ]}
       />
     </View>
@@ -161,6 +180,33 @@ export function ControlContent({ mode, gps, onNavigate }: { mode?: 'cam' | 'kokp
         </View>
       </Section>
 
+      <Section title="ANİMASYON" hint="Kapalıyken akan ve dönen illüzyonlar durur (pil tasarrufu); hız göstergesi çalışmaya devam eder." pal={pal}>
+        <Segmented
+          pal={pal}
+          value={nx.motion}
+          onChange={(v) => update({ motion: v })}
+          options={[
+            { value: 'tam', label: 'AÇIK' },
+            { value: 'az', label: 'KAPALI' },
+          ]}
+        />
+      </Section>
+
+      <Section
+        title="CAMA YANSIT"
+        hint="Telefonu cama yakın yatırın. Camdaki yazı düz okunmuyorsa diğer kenar seçeneğini deneyin."
+        pal={pal}
+      >
+        {mode === 'cam' || !mode
+          ? mirrorRow(mode ? '' : 'WINDSHIELD HUD', nx.mirror ? nx.mirrorAxis : 'normal', (v) => update(v === 'normal' ? { mirror: false } : { mirror: true, mirrorAxis: v }))
+          : null}
+        {mode === 'kokpit' || !mode
+          ? mirrorRow(mode ? '' : 'DİJİTAL KOKPİT', nx.cockpitMirror ? nx.mirrorAxis : 'normal', (v) =>
+              update(v === 'normal' ? { cockpitMirror: false } : { cockpitMirror: true, mirrorAxis: v }),
+            )
+          : null}
+      </Section>
+
       <Section
         title="EKRAN YÖNÜ"
         hint={web ? 'Tarayıcıda yön kilidi yalnızca tam ekranda çalışır (paneldeki tam ekran düğmesi).' : 'Seçtiğiniz yönde ekran kilitlenir; virajda ve yokuşta dönmez.'}
@@ -169,21 +215,6 @@ export function ControlContent({ mode, gps, onNavigate }: { mode?: 'cam' | 'kokp
         {mode === 'cam' || !mode ? orientRow(mode ? '' : 'WINDSHIELD HUD', nx.camOrientation, (o) => update({ camOrientation: o })) : null}
         {mode === 'kokpit' || !mode ? orientRow(mode ? '' : 'DİJİTAL KOKPİT', nx.cockpitOrientation, (o) => update({ cockpitOrientation: o })) : null}
       </Section>
-
-      {mode !== 'kokpit' ? (
-        <Section title="CAM GÖRÜNÜMÜ" hint="Camdaki yazı düz okunmuyorsa diğer kenar seçeneğini deneyin. Cam modunda arka plan siyahtır." pal={pal}>
-          <Segmented
-            pal={pal}
-            value={nx.mirror ? nx.mirrorAxis : 'normal'}
-            onChange={(v) => update(v === 'normal' ? { mirror: false } : { mirror: true, mirrorAxis: v })}
-            options={[
-              { value: 'normal', label: 'NORMAL' },
-              { value: 'ust', label: 'ÜST KENAR CAMA' },
-              { value: 'alt', label: 'ALT KENAR CAMA' },
-            ]}
-          />
-        </Section>
-      ) : null}
 
       <Section title="HIZ UYARISI" hint="Bu hızı geçince rakamlar kırmızı olur ve telefon bir kez titrer." pal={pal}>
         <Stepper
@@ -297,7 +328,6 @@ export function ControlContent({ mode, gps, onNavigate }: { mode?: 'cam' | 'kokp
 
       <Section title="DİĞER" pal={pal}>
         <SwitchRow label="Ekran açık kalsın" hint="HUD ekranındayken ekran kararmaz" pal={pal} value={nx.keepAwake} onChange={(v) => update({ keepAwake: v })} />
-        <SwitchRow label="Az animasyon (pil tasarrufu)" hint="Akan ve dönen illüzyonlar durur" pal={pal} value={nx.motion === 'az'} onChange={(v) => update({ motion: v ? 'az' : 'tam' })} />
         <SwitchRow
           label="Demo verisi"
           hint="GPS yokken arayüzü denemek için yapay hız üretir. Açıkken ekranda sürekli DEMO uyarısı görünür; gerçek hız değildir."
@@ -307,36 +337,6 @@ export function ControlContent({ mode, gps, onNavigate }: { mode?: 'cam' | 'kokp
         />
       </Section>
 
-      {gps ? (
-        <Section title="GPS TANI" hint="Hız görünmüyorsa bu bölümün ekran görüntüsünü gönderin." pal={pal}>
-          <View style={{ gap: 5, padding: 10, borderWidth: 1, borderColor: alpha(pal.primary, 0.25), backgroundColor: pal.glass, borderRadius: 4 }}>
-            {[
-              ['DURUM', STATUS_TEXT[gps.status].title],
-              ['İZİN / SERVİS', gps.baseStatus.toUpperCase()],
-              ['DOĞRULUK', gps.accuracy == null ? 'YOK' : `±${Math.round(gps.accuracy)} M`],
-              ['CİHAZ HIZI', gps.rawSpeed == null ? 'GÖNDERİLMİYOR' : `${(gps.rawSpeed * 3.6).toFixed(1)} KM/H`],
-              ['SON VERİ', gps.lastFixAt == null ? 'HİÇ GELMEDİ' : `${Math.max(0, Math.round((gps.now - gps.lastFixAt) / 1000))} SN ÖNCE`],
-              ...(web
-                ? [
-                    ['GÜVENLİ BAĞLANTI', typeof window !== 'undefined' && window.isSecureContext ? 'EVET' : 'HAYIR'],
-                    ['TARAYICI', typeof navigator !== 'undefined' ? navigator.userAgent.replace(/^Mozilla\/5\.0 /, '').slice(0, 70) : '-'],
-                  ]
-                : []),
-            ].map(([k, v]) => (
-              <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-                <NxLabel color={pal.dim} size={8.5} spacing={1}>
-                  {k}
-                </NxLabel>
-                <NxLabel color={pal.text} size={8.5} spacing={0.5} numberOfLines={2} style={{ flex: 1, textAlign: 'right', textTransform: 'none' }}>
-                  {v}
-                </NxLabel>
-              </View>
-            ))}
-          </View>
-          <HudButton icon="crosshairs-gps" label="GPS'İ YENİDEN BAŞLAT" pal={pal} onPress={gps.retry} />
-        </Section>
-      ) : null}
-
       <View style={{ marginTop: 24, alignItems: 'flex-start' }}>
         <HudButton icon="backup-restore" label="VARSAYILANLARA DÖN" pal={pal} onPress={() => update({ ...DEFAULT_NEXUS, lastView: nx.lastView })} />
       </View>
@@ -345,7 +345,7 @@ export function ControlContent({ mode, gps, onNavigate }: { mode?: 'cam' | 'kokp
 }
 
 /** Sağdan açılan kontrol paneli: HUD ve kokpitten çıkmadan tüm ayarlar. Cam modunda aynalanmaz. */
-export function HudDrawer({ mode, open, onClose, gps }: { mode: 'cam' | 'kokpit'; open: boolean; onClose: () => void; gps?: NexusGps }) {
+export function HudDrawer({ mode, open, onClose }: { mode: 'cam' | 'kokpit'; open: boolean; onClose: () => void }) {
   const { nx, upal: pal } = useNexus();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -404,10 +404,10 @@ export function HudDrawer({ mode, open, onClose, gps }: { mode: 'cam' | 'kokpit'
           {Platform.OS === 'web' ? (
             <HudButton icon={fs ? 'fullscreen-exit' : 'fullscreen'} pal={pal} size={40} onPress={() => toggleFullscreen(orient).then(() => setFs(isFullscreen()))} />
           ) : null}
-          <HudButton icon="close" pal={pal} size={40} onPress={onClose} />
+          <HudButton icon="close" pal={pal} size={40} onPress={onClose} label={undefined} />
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 28 }}>
-          <ControlContent mode={mode} gps={gps} onNavigate={onClose} />
+          <ControlContent mode={mode} onNavigate={onClose} />
         </ScrollView>
       </Animated.View>
     </View>

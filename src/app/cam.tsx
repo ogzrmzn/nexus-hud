@@ -167,7 +167,7 @@ export default function Windshield() {
         </View>
       ) : null}
       <DimOverlay brightness={nx.brightness} />
-      <HudDrawer mode="cam" open={drawer} onClose={() => setDrawer(false)} gps={gps} />
+      <HudDrawer mode="cam" open={drawer} onClose={() => setDrawer(false)} />
     </View>
   );
 }

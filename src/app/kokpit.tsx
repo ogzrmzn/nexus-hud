@@ -189,7 +189,8 @@ export default function Cockpit() {
           <HudButton icon="menu" pal={pal} size={36} label="PANEL" active onPress={() => setDrawer(true)} />
         </View>
         {alert ? <View style={{ marginTop: 8, alignItems: 'center' }}>{alert}</View> : null}
-        <View style={{ flex: 1, marginTop: 8 }}>{body}</View>
+        {/* Cama yansıtma: gösterge ve veriler çevrilir; üst şerit (düğmeler) düz kalır */}
+        <View style={{ flex: 1, marginTop: 8, transform: !nx.cockpitMirror ? [] : nx.mirrorAxis === 'ust' ? [{ scaleY: -1 }] : [{ scaleX: -1 }] }}>{body}</View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, gap: 12 }}>
           <NxLabel color={alpha(pal.dim, 0.9)} size={8} spacing={1.6} style={{ textTransform: 'none' }}>
             {`// ${theme.name.toUpperCase()}`}
@@ -200,7 +201,7 @@ export default function Cockpit() {
         </View>
       </Animated.View>
       <DimOverlay brightness={nx.brightness} />
-      <HudDrawer mode="kokpit" open={drawer} onClose={() => setDrawer(false)} gps={gps} />
+      <HudDrawer mode="kokpit" open={drawer} onClose={() => setDrawer(false)} />
     </View>
   );
 }

@@ -24,6 +24,8 @@ export interface NexusSettings {
   dayNight: DayNight;
   /** Cam modunda ters (ayna) görünüm */
   mirror: boolean;
+  /** Kokpit temalarında cama yansıtma (telefon ekranında kullanım için varsayılan kapalı) */
+  cockpitMirror: boolean;
   /** Ayna yönü: 'ust' = üst kenar cama (sağ-sol çevrilir), 'alt' = alt kenar cama (alt-üst çevrilir) */
   mirrorAxis: MirrorAxis;
   /** Seçilen yön ekranı o yönde kilitler */
@@ -52,6 +54,7 @@ export const DEFAULT_NEXUS: NexusSettings = {
   dayNight: 'oto',
   mirror: true,
   mirrorAxis: 'ust',
+  cockpitMirror: false,
   camOrientation: 'yatay',
   cockpitOrientation: 'yatay',
   keepAwake: true,
