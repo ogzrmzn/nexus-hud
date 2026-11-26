@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { unitLabel } from '@/features/nexus/format';
 import { ALERT_MAX, ALERT_STEP, DEFAULT_NEXUS, THEME_IDS, type DayNight, type Orientation, type WidgetKey } from '@/features/nexus/settings';
 import { ACCENTS, alpha, THEMES, type NexusPalette } from '@/features/nexus/themes';
-import { isFullscreen, toggleFullscreen } from '@/features/nexus/useHudSystem';
+import { isFullscreen, lockOrientationWeb, toggleFullscreen } from '@/features/nexus/useHudSystem';
 import { useNexus } from '@/features/nexus/useNexus';
 import { HudButton, NxIcon, NxLabel, NxSwitch, OptionCards, Segmented, Stepper } from './primitives';
 
@@ -209,11 +209,17 @@ export function ControlContent({ mode, onNavigate }: { mode?: 'cam' | 'kokpit'; 
 
       <Section
         title="EKRAN YÖNÜ"
-        hint={web ? 'Tarayıcıda yön kilidi yalnızca tam ekranda çalışır (paneldeki tam ekran düğmesi).' : 'Seçtiğiniz yönde ekran kilitlenir; virajda ve yokuşta dönmez.'}
+        hint={web ? 'Yönü seçince ekran tam ekrana geçer ve o yönde kilitlenir; virajda dönmez. (Tarayıcılar kilide yalnızca tam ekranda izin verir.)' : 'Seçtiğiniz yönde ekran kilitlenir; virajda ve yokuşta dönmez.'}
         pal={pal}
       >
-        {mode === 'cam' || !mode ? orientRow(mode ? '' : 'WINDSHIELD HUD', nx.camOrientation, (o) => update({ camOrientation: o })) : null}
-        {mode === 'kokpit' || !mode ? orientRow(mode ? '' : 'DİJİTAL KOKPİT', nx.cockpitOrientation, (o) => update({ cockpitOrientation: o })) : null}
+        {mode === 'cam' || !mode ? orientRow(mode ? '' : 'WINDSHIELD HUD', nx.camOrientation, (o) => {
+              update({ camOrientation: o });
+              if (mode) lockOrientationWeb(o);
+            }) : null}
+        {mode === 'kokpit' || !mode ? orientRow(mode ? '' : 'DİJİTAL KOKPİT', nx.cockpitOrientation, (o) => {
+              update({ cockpitOrientation: o });
+              if (mode) lockOrientationWeb(o);
+            }) : null}
       </Section>
 
       <Section title="HIZ UYARISI" hint="Bu hızı geçince rakamlar kırmızı olur ve telefon bir kez titrer." pal={pal}>

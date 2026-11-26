@@ -11,15 +11,37 @@ const TAG = 'nexus-hud';
  * HUD ekranlarının cihaz ayarları: ekranı açık tutma, parlaklık ve yön kilidi.
  * Ekrandan çıkınca hepsi eski haline döner (uygulamanın geri kalanı dikey).
  */
-type WebOrientation = { lock?: (o: string) => Promise<void>; unlock?: () => void };
+type WebOrientation = { type?: string; lock?: (o: string) => Promise<void>; unlock?: () => void };
 const webOrientation = (): WebOrientation | undefined =>
   typeof screen !== 'undefined' ? ((screen as unknown as { orientation?: WebOrientation }).orientation ?? undefined) : undefined;
 
+/**
+ * Kilitlenecek tek yön. "landscape" iki yatay yöne (sağa/sola yatık) izin verir ve telefon virajda
+ * eğilince ekran 180° döner; bu yüzden o an hangi yatay/dikey yöndeyse yalnız o yöne kilitlenir.
+ */
+export function exactWebOrientation(o: Orientation, current: string | undefined): string {
+  if (o === 'yatay') return current?.startsWith('landscape') ? current : 'landscape-primary';
+  return current?.startsWith('portrait') ? current : 'portrait-primary';
+}
+
 /** Web: ekran yönü kilidi yalnızca tam ekranda çalışır (Android Chrome); desteklenmezse sessizce geçer */
 function lockWeb(o: Orientation) {
-  webOrientation()
-    ?.lock?.(o === 'yatay' ? 'landscape' : 'portrait')
-    .catch(() => {});
+  const so = webOrientation();
+  so?.lock?.(exactWebOrientation(o, so.type)).catch(() => {});
+}
+
+/**
+ * Web'de yön seçilince çağrılır (kullanıcı dokunuşu içinde): tam ekran değilse açar, sonra kilitler.
+ * Tarayıcılar yön kilidine yalnızca tam ekranda izin verir.
+ */
+export async function lockOrientationWeb(o: Orientation): Promise<void> {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+  try {
+    if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+  } catch {
+    return;
+  }
+  lockWeb(o);
 }
 
 export function isFullscreen(): boolean {
@@ -57,9 +79,29 @@ export function useHudSystem({ keepAwake, brightness, orientation }: { keepAwake
   useEffect(() => {
     if (Platform.OS === 'web') {
       if (isFullscreen()) lockWeb(orientation);
-      return;
+      // Tam ekrana her girişte kilidi yeniden uygula (tarayıcı çıkışta kilidi bırakır)
+      const onFs = () => {
+        if (isFullscreen()) lockWeb(orientation);
+      };
+      document.addEventListener('fullscreenchange', onFs);
+      return () => document.removeEventListener('fullscreenchange', onFs);
     }
-    ScreenOrientation.lockAsync(orientation === 'yatay' ? ScreenOrientation.OrientationLock.LANDSCAPE : ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+    let alive = true;
+    (async () => {
+      if (orientation === 'dikey') {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        return;
+      }
+      // Yatay: telefon şu an hangi yana yatıksa yalnız o yöne kilitle (virajda 180° dönmesin)
+      const cur = await ScreenOrientation.getOrientationAsync().catch(() => ScreenOrientation.Orientation.UNKNOWN);
+      if (!alive) return;
+      const lock =
+        cur === ScreenOrientation.Orientation.LANDSCAPE_RIGHT ? ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT : ScreenOrientation.OrientationLock.LANDSCAPE_LEFT;
+      await ScreenOrientation.lockAsync(lock);
+    })().catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, [orientation]);
 
   useEffect(() => {

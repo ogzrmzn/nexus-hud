@@ -104,3 +104,14 @@ describe('NEXUS GPS dürüstlüğü', () => {
     for (let t = 0; t < 300; t += 7) expect(demoSpeed(t)).toBeGreaterThanOrEqual(0);
   });
 });
+
+describe('Ekran yönü kilidi', () => {
+  it('yatay kilit, telefonun o anki yatay yönüne sabitlenir (virajda 180° dönmez)', () => {
+    const { exactWebOrientation } = jest.requireActual('@/features/nexus/useHudSystem');
+    expect(exactWebOrientation('yatay', 'landscape-secondary')).toBe('landscape-secondary');
+    expect(exactWebOrientation('yatay', 'landscape-primary')).toBe('landscape-primary');
+    expect(exactWebOrientation('yatay', 'portrait-primary')).toBe('landscape-primary');
+    expect(exactWebOrientation('dikey', 'landscape-primary')).toBe('portrait-primary');
+    expect(exactWebOrientation('dikey', undefined)).toBe('portrait-primary');
+  });
+});
