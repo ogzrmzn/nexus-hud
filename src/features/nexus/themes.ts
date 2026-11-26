@@ -55,6 +55,12 @@ export interface NexusTheme {
 
 const base = { warn: '#FFB547', danger: '#FF3B5C' };
 
+/**
+ * Uygulamanın ana rengi (elektrik mavisi). İlk açılışta tüm temalar bu renkle gelir; temalar şekil,
+ * akış ve ikincil ışıklarıyla ayrışır. Kullanıcı panelden 'Tema rengi'ni değiştirebilir.
+ */
+export const APP_PRIMARY = { night: '#22D3FF', day: '#4FE3FF' };
+
 export const THEMES: Record<NexusThemeId, NexusTheme> = {
   nexus: {
     id: 'nexus',
@@ -64,8 +70,8 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     layout: 'rail',
     glyph: 'prism',
     chamfer: 10,
-    night: { ...base, bg: '#020409', text: '#E8FBFF', primary: '#22D3FF', secondary: '#19F5D0', holo: '#9B6BFF', dim: '#4A6478', glass: 'rgba(34,211,255,0.06)' },
-    day: { ...base, bg: '#050A12', text: '#FFFFFF', primary: '#4FE3FF', secondary: '#3DFFE0', holo: '#B795FF', dim: '#7E98AC', glass: 'rgba(79,227,255,0.10)' },
+    night: { ...base, bg: '#020409', text: '#E8FBFF', primary: APP_PRIMARY.night, secondary: '#19F5D0', holo: '#9B6BFF', dim: '#4A6478', glass: 'rgba(34,211,255,0.06)' },
+    day: { ...base, bg: '#050A12', text: '#FFFFFF', primary: APP_PRIMARY.day, secondary: '#3DFFE0', holo: '#B795FF', dim: '#7E98AC', glass: 'rgba(79,227,255,0.10)' },
   },
   quantum: {
     id: 'quantum',
@@ -75,8 +81,8 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     layout: 'columns',
     glyph: 'hairline',
     chamfer: 22,
-    night: { ...base, bg: '#04030B', text: '#F1EDFF', primary: '#8FA8FF', secondary: '#7DF9FF', holo: '#B07CFF', dim: '#544C7A', glass: 'rgba(176,124,255,0.07)' },
-    day: { ...base, bg: '#0A0818', text: '#FFFFFF', primary: '#AFC1FF', secondary: '#9BFBFF', holo: '#C9A3FF', dim: '#8A82B4', glass: 'rgba(176,124,255,0.12)' },
+    night: { ...base, bg: '#04030B', text: '#F1EDFF', primary: APP_PRIMARY.night, secondary: '#7DF9FF', holo: '#B07CFF', dim: '#544C7A', glass: 'rgba(176,124,255,0.07)' },
+    day: { ...base, bg: '#0A0818', text: '#FFFFFF', primary: APP_PRIMARY.day, secondary: '#9BFBFF', holo: '#C9A3FF', dim: '#8A82B4', glass: 'rgba(176,124,255,0.12)' },
   },
   hyperdrive: {
     id: 'hyperdrive',
@@ -86,8 +92,8 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     layout: 'band',
     glyph: 'italic',
     chamfer: 16,
-    night: { ...base, bg: '#03020A', text: '#FFFFFF', primary: '#2BE7FF', secondary: '#FFFFFF', holo: '#C054FF', dim: '#4B3F6E', glass: 'rgba(192,84,255,0.08)' },
-    day: { ...base, bg: '#08061A', text: '#FFFFFF', primary: '#5CF0FF', secondary: '#FFFFFF', holo: '#D485FF', dim: '#8379A8', glass: 'rgba(192,84,255,0.13)' },
+    night: { ...base, bg: '#03020A', text: '#FFFFFF', primary: APP_PRIMARY.night, secondary: '#FFFFFF', holo: '#C054FF', dim: '#4B3F6E', glass: 'rgba(192,84,255,0.08)' },
+    day: { ...base, bg: '#08061A', text: '#FFFFFF', primary: APP_PRIMARY.day, secondary: '#FFFFFF', holo: '#D485FF', dim: '#8379A8', glass: 'rgba(192,84,255,0.13)' },
   },
   lightspeed: {
     id: 'lightspeed',
@@ -97,8 +103,8 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     layout: 'grid',
     glyph: 'mono',
     chamfer: 6,
-    night: { ...base, bg: '#02040C', text: '#F2FAFF', primary: '#7FD6FF', secondary: '#FFFFFF', holo: '#8A7BFF', dim: '#4A5A78', glass: 'rgba(127,214,255,0.06)' },
-    day: { ...base, bg: '#060A18', text: '#FFFFFF', primary: '#A6E4FF', secondary: '#FFFFFF', holo: '#A99DFF', dim: '#8494B4', glass: 'rgba(166,228,255,0.11)' },
+    night: { ...base, bg: '#02040C', text: '#F2FAFF', primary: APP_PRIMARY.night, secondary: '#FFFFFF', holo: '#8A7BFF', dim: '#4A5A78', glass: 'rgba(127,214,255,0.06)' },
+    day: { ...base, bg: '#060A18', text: '#FFFFFF', primary: APP_PRIMARY.day, secondary: '#FFFFFF', holo: '#A99DFF', dim: '#8494B4', glass: 'rgba(166,228,255,0.11)' },
   },
   nova: {
     id: 'nova',
@@ -108,8 +114,8 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     layout: 'rail',
     glyph: 'prism',
     chamfer: 8,
-    night: { ...base, bg: '#03020D', text: '#FFFFFF', primary: '#B48CFF', secondary: '#7FE8FF', holo: '#FF7AD9', dim: '#4E4472', glass: 'rgba(180,140,255,0.07)' },
-    day: { ...base, bg: '#0A071C', text: '#FFFFFF', primary: '#CDB2FF', secondary: '#A6F0FF', holo: '#FF9DE4', dim: '#8C82B4', glass: 'rgba(205,178,255,0.12)' },
+    night: { ...base, bg: '#03020D', text: '#FFFFFF', primary: APP_PRIMARY.night, secondary: '#7FE8FF', holo: '#FF7AD9', dim: '#4E4472', glass: 'rgba(180,140,255,0.07)' },
+    day: { ...base, bg: '#0A071C', text: '#FFFFFF', primary: APP_PRIMARY.day, secondary: '#A6F0FF', holo: '#FF9DE4', dim: '#8C82B4', glass: 'rgba(205,178,255,0.12)' },
   },
   neon: {
     id: 'neon',
@@ -119,8 +125,8 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     layout: 'band',
     glyph: 'italic',
     chamfer: 12,
-    night: { ...base, bg: '#040312', text: '#FFFFFF', primary: '#19F5D0', secondary: '#4F8BFF', holo: '#C054FF', dim: '#45407A', glass: 'rgba(25,245,208,0.06)' },
-    day: { ...base, bg: '#0A0820', text: '#FFFFFF', primary: '#5CFFE2', secondary: '#7FAAFF', holo: '#D485FF', dim: '#837DB8', glass: 'rgba(92,255,226,0.11)' },
+    night: { ...base, bg: '#040312', text: '#FFFFFF', primary: APP_PRIMARY.night, secondary: '#4F8BFF', holo: '#C054FF', dim: '#45407A', glass: 'rgba(25,245,208,0.06)' },
+    day: { ...base, bg: '#0A0820', text: '#FFFFFF', primary: APP_PRIMARY.day, secondary: '#7FAAFF', holo: '#D485FF', dim: '#837DB8', glass: 'rgba(92,255,226,0.11)' },
   },
   holo: {
     id: 'holo',
@@ -130,8 +136,9 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     layout: 'columns',
     glyph: 'prism',
     chamfer: 10,
-    night: { ...base, bg: '#070402', text: '#FFF6E6', primary: '#FFB547', secondary: '#4FE3FF', holo: '#FF7A3D', dim: '#6E5A3E', glass: 'rgba(255,181,71,0.07)' },
-    day: { ...base, bg: '#120B04', text: '#FFFFFF', primary: '#FFC56E', secondary: '#7AEBFF', holo: '#FF9662', dim: '#A89270', glass: 'rgba(255,197,110,0.12)' },
+    // Uygulamanın ana renkleri: elektrik mavisi + turkuaz, kontrollü mor (diğer temalarla aynı aile)
+    night: { ...base, bg: '#020409', text: '#E8FBFF', primary: APP_PRIMARY.night, secondary: '#19F5D0', holo: '#9B6BFF', dim: '#4A6478', glass: 'rgba(34,211,255,0.06)' },
+    day: { ...base, bg: '#050A12', text: '#FFFFFF', primary: APP_PRIMARY.day, secondary: '#3DFFE0', holo: '#B795FF', dim: '#7E98AC', glass: 'rgba(79,227,255,0.10)' },
   },
 };
 

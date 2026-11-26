@@ -144,3 +144,13 @@ describe('Işık: güneş saatleri', () => {
     expect(effectiveBrightness(null, 0)).toBe(0.8);
   });
 });
+
+describe('Ortak ana renk', () => {
+  it('ilk açılışta tüm temalar aynı ana renkle gelir', () => {
+    const { APP_PRIMARY } = jest.requireActual('@/features/nexus/themes');
+    for (const t of THEME_IDS) {
+      expect(THEMES[t].night.primary).toBe(APP_PRIMARY.night);
+      expect(THEMES[t].day.primary).toBe(APP_PRIMARY.day);
+    }
+  });
+});
