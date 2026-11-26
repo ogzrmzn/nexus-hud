@@ -365,7 +365,8 @@ export function HudDrawer({ mode, open, onClose }: { mode: 'cam' | 'kokpit'; ope
   }, [open, x]);
 
   const panelStyle = useAnimatedStyle(() => ({ transform: [{ translateX: x.value * (panelW + 20) }] }));
-  const backStyle = useAnimatedStyle(() => ({ opacity: (1 - x.value) * 0.55 }));
+  // Arka plan yalnızca hafifçe kararır: panel açıkken yapılan değişiklikler arkada görünür
+  const backStyle = useAnimatedStyle(() => ({ opacity: (1 - x.value) * 0.12 }));
 
   if (!mounted) return null;
   const orient: Orientation = mode === 'cam' ? nx.camOrientation : nx.cockpitOrientation;
@@ -383,7 +384,8 @@ export function HudDrawer({ mode, open, onClose }: { mode: 'cam' | 'kokpit'; ope
             bottom: 0,
             right: 0,
             width: panelW + insets.right,
-            backgroundColor: pal.bg,
+            // Yarı saydam cam panel
+            backgroundColor: alpha(pal.bg, 0.8),
             borderLeftWidth: 1,
             borderColor: alpha(pal.primary, 0.45),
             paddingRight: insets.right,

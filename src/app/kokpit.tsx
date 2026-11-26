@@ -131,28 +131,34 @@ export default function Cockpit() {
   const pick = (keys: string[]) => cells.filter((c) => keys.includes(c.k));
   const left = pick(['sure', 'mesafe']);
   const right = pick(['ort', 'maks']);
-  const col = (list: typeof cells, align: 'flex-start' | 'flex-end') => (
-    <View style={{ justifyContent: 'center', gap: 22, alignItems: align, minWidth: 90 }}>{list.map((c) => cell(c, cellSize, align))}</View>
+  // Sol ve sağ sütun her zaman aynı genişlikte: gösterge ekranın tam ortasında kalır.
+  // Hiç bilgi gösterilmiyorsa sütunlar kalkar ve gösterge tüm genişliği kullanır.
+  const hasSide = left.length > 0 || right.length > 0 || w.compass;
+  const sideW = hasSide ? Math.max(104, cellSize * 4.4) : 0;
+  const col = (list: typeof cells, align: 'flex-start' | 'flex-end', extra?: ReactNode) => (
+    <View style={{ width: sideW, justifyContent: 'center', gap: 22, alignItems: align }}>
+      {list.map((c) => cell(c, cellSize, align))}
+      {extra}
+    </View>
   );
   const body: ReactNode = landscape ? (
-    <View style={{ flex: 1, flexDirection: 'row', gap: 12 }}>
-      {col(left, 'flex-start')}
+    <View style={{ flex: 1, flexDirection: 'row', gap: hasSide ? 12 : 0 }}>
+      {hasSide ? col(left, 'flex-start') : null}
       <View style={{ flex: 1 }}>
         <Fit>{gauge}</Fit>
       </View>
-      <View style={{ justifyContent: 'center', alignItems: 'flex-end', gap: 22 }}>
-        {right.map((c) => cell(c, cellSize, 'flex-end'))}
-        {dial(Math.min(96, height * 0.24))}
-      </View>
+      {hasSide ? col(right, 'flex-end', dial(Math.min(96, height * 0.24))) : null}
     </View>
   ) : (
     <View style={{ flex: 1, gap: 14 }}>
       <Fit>{gauge}</Fit>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        {col(left, 'flex-start')}
-        {dial(Math.min(110, width * 0.27))}
-        {col(right, 'flex-end')}
-      </View>
+      {hasSide ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          {col(left, 'flex-start')}
+          <View style={{ flex: 1, alignItems: 'center' }}>{dial(Math.min(110, width * 0.27))}</View>
+          {col(right, 'flex-end')}
+        </View>
+      ) : null}
     </View>
   );
 
