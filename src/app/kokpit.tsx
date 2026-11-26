@@ -57,7 +57,9 @@ export default function Cockpit() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const sysReduced = useReducedMotion();
-  const reduced = sysReduced || nx.motion === 'az';
+  // İllüzyonlar yalnızca uygulamadaki "az animasyon" ayarıyla durur; giriş geçişleri sistem tercihine de uyar
+  const reduced = nx.motion === 'az';
+  const enterReduced = sysReduced || reduced;
   const w = nx.widgets;
   const gps = useNexusGps({ demo: nx.demo, compass: w.compass });
   const weather = useNexusWeather(w.weather, gps.trip.last?.lat ?? null, gps.trip.last?.lon ?? null);
@@ -214,16 +216,53 @@ export default function Cockpit() {
       break;
     }
     case 'band': {
-      // Hyperdrive: üstte eğik HUD bandı, altında warp
-      body = (
-        <View style={{ flex: 1, gap: 6 }}>
-          <View style={{ transform: [{ skewX: '-12deg' }], borderWidth: 1, borderColor: alpha(pal.holo, 0.6), backgroundColor: pal.glass, paddingVertical: 10, paddingHorizontal: 18, marginHorizontal: 10 }}>
-            <View style={{ transform: [{ skewX: '12deg' }], flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', rowGap: 8 }}>
-              {cells.map((c) => cell(c, cellSize * 0.82))}
+      // Hyperdrive / Neon Highway: hız ortada ve büyük; süre + mesafe solda, ortalama + maksimum sağda
+      const pick = (keys: string[]) => cells.filter((c) => keys.includes(c.k));
+      const left = pick(['sure', 'mesafe']);
+      const right = pick(['ort', 'maks']);
+      const side = (list: typeof cells, align: 'flex-start' | 'flex-end') => (
+        <View style={{ justifyContent: 'center', gap: 22, alignItems: align, paddingHorizontal: 4 }}>
+          {list.map((c) => (
+            <View key={c.k} style={{ alignItems: align }}>
+              {cell(c, cellSize, align)}
+              <View style={{ marginTop: 6, width: 70, height: 2, backgroundColor: alpha(pal.holo, 0.7), transform: [{ skewX: '-30deg' }] }} />
+            </View>
+          ))}
+        </View>
+      );
+      const heading = w.compass ? (
+        <DataCell
+          label="YÖN"
+          value={gps.heading == null ? '---' : String(Math.round(gps.heading) % 360).padStart(3, '0')}
+          unit={headingLabel(gps.heading)}
+          pal={pal}
+          glyph="mono"
+          size={cellSize * 0.8}
+          align="flex-end"
+          icon="compass-outline"
+        />
+      ) : null;
+      body = landscape ? (
+        <View style={{ flex: 1, flexDirection: 'row', gap: 10 }}>
+          {side(left, 'flex-start')}
+          <View style={{ flex: 1 }}>
+            <Fit>{gauge}</Fit>
+          </View>
+          <View style={{ justifyContent: 'center', gap: 22 }}>
+            {side(right, 'flex-end')}
+            {heading}
+          </View>
+        </View>
+      ) : (
+        <View style={{ flex: 1, gap: 12 }}>
+          <Fit>{gauge}</Fit>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            {side(left, 'flex-start')}
+            <View style={{ gap: 22, alignItems: 'flex-end' }}>
+              {side(right, 'flex-end')}
+              {heading}
             </View>
           </View>
-          <View style={{ alignItems: 'center' }}>{tape(Math.min(contentW, 520))}</View>
-          <Fit>{gauge}</Fit>
         </View>
       );
       break;
@@ -270,7 +309,7 @@ export default function Cockpit() {
       <Backdrop pal={pal} width={width} height={height} />
       <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderWidth: 3, borderColor: pal.danger }, edgeStyle]} />
       <Animated.View
-        entering={reduced ? undefined : FadeIn.duration(450)}
+        entering={enterReduced ? undefined : FadeIn.duration(450)}
         style={{ flex: 1, paddingTop: insets.top + 10, paddingBottom: insets.bottom + 10, paddingLeft: insets.left + 16, paddingRight: insets.right + 16 }}
       >
         {/* Üst şerit */}

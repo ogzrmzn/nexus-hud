@@ -1,14 +1,15 @@
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 import { BootSequence } from '@/components/nexus/BootSequence';
 import { NxNumber } from '@/components/nexus/NxNumber';
 import { HudButton, NxIcon, NxLabel } from '@/components/nexus/primitives';
 import { GAUGE_ASPECT, Gauge } from '@/components/nexus/Gauges';
-import { THEME_IDS } from '@/features/nexus/settings';
+import { THEME_IDS, type NexusThemeId } from '@/features/nexus/settings';
 import { alpha, paletteFor, THEMES, type NexusPalette } from '@/features/nexus/themes';
 import { useNexus } from '@/features/nexus/useNexus';
 
@@ -38,74 +39,85 @@ function Floor({ width, height, pal }: { width: number; height: number; pal: Nex
   );
 }
 
-function ModeCard({
+/** Tek tema kartı: canlı önizleme + ad + kategori. Dokununca o temayla sürüş ekranı açılır. */
+function ThemeCard({
   title,
-  code,
+  category,
   desc,
-  art,
+  preview,
+  bg,
+  accent,
+  text,
+  dim,
+  selected,
   onPress,
-  pal,
   delay,
   reduced,
+  width,
 }: {
   title: string;
-  code: string;
+  category: string;
   desc: string;
-  art: React.ReactNode;
+  preview: ReactNode;
+  bg: string;
+  accent: string;
+  text: string;
+  dim: string;
+  selected: boolean;
   onPress: () => void;
-  pal: NexusPalette;
   delay: number;
   reduced: boolean;
+  width: number;
 }) {
   return (
-    <Animated.View entering={reduced ? undefined : FadeInDown.delay(delay).duration(520)} style={{ flex: 1 }}>
+    <Animated.View entering={reduced ? undefined : FadeInDown.delay(delay).duration(480)} style={{ width }}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={title}
+        accessibilityState={{ selected }}
         style={({ pressed }) => ({
-          flex: 1,
-          minHeight: 170,
-          borderWidth: 1,
-          borderColor: pressed ? pal.primary : alpha(pal.primary, 0.3),
-          backgroundColor: pressed ? alpha(pal.primary, 0.1) : pal.glass,
-          padding: 18,
+          backgroundColor: bg,
+          borderWidth: selected ? 2 : 1,
+          borderColor: selected || pressed ? accent : alpha(accent, 0.35),
+          borderRadius: 8,
           overflow: 'hidden',
         })}
       >
-        {/* pahlı köşe ve holografik kenar */}
-        <View style={{ position: 'absolute', right: -14, top: -14, width: 28, height: 28, backgroundColor: pal.bg, transform: [{ rotate: '45deg' }], borderBottomWidth: 1, borderColor: pal.primary }} />
-        <View style={{ position: 'absolute', left: 0, top: 18, bottom: 18, width: 2, backgroundColor: pal.holo, opacity: 0.8 }} />
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <NxLabel color={pal.dim} size={9} spacing={2}>
-            {code}
-          </NxLabel>
+        <View pointerEvents="none" style={{ height: 190, alignItems: 'center', justifyContent: 'center' }}>
+          {preview}
         </View>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10 }}>{art}</View>
-        <NxLabel color={pal.text} size={17} spacing={4} weight="800">
-          {title}
-        </NxLabel>
-        <NxLabel color={pal.dim} size={9.5} spacing={1.2} style={{ marginTop: 6 }} numberOfLines={2}>
-          {desc}
-        </NxLabel>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 }}>
-          <NxLabel color={pal.primary} size={10} spacing={3}>
-            BAŞLAT
-          </NxLabel>
-          <NxIcon name="chevron-double-right" size={14} color={pal.primary} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderColor: alpha(accent, 0.25) }}>
+          <View style={{ flex: 1 }}>
+            <NxLabel color={accent} size={9} spacing={2}>
+              {category}
+            </NxLabel>
+            <NxLabel color={text} size={16} spacing={3} weight="800" style={{ textTransform: 'none', marginTop: 3 }}>
+              {title.toUpperCase()}
+            </NxLabel>
+            <NxLabel color={dim} size={9.5} spacing={0.6} numberOfLines={2} style={{ textTransform: 'none', marginTop: 4 }}>
+              {desc}
+            </NxLabel>
+          </View>
+          <View style={{ alignItems: 'center', gap: 4 }}>
+            <NxIcon name={selected ? 'check-decagram' : 'chevron-double-right'} size={22} color={accent} />
+            <NxLabel color={accent} size={8.5} spacing={2}>
+              {selected ? 'SON' : 'BAŞLAT'}
+            </NxLabel>
+          </View>
         </View>
       </Pressable>
     </Animated.View>
   );
 }
 
-/** Başlangıç: yalnızca iki kullanım modu, tema ve ayarlar */
+/** Başlangıç: tek sayfada Windshield HUD ve tüm kokpit temaları */
 export default function NexusStart() {
-  const { upal: pal, pal: hudPal, theme, nx, day, update } = useNexus();
+  const { upal: pal, pal: hudPal, wpal, nx, day, update } = useNexus();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const sysReduced = useReducedMotion();
-  const reduced = sysReduced || nx.motion === 'az';
+  const enterReduced = sysReduced || nx.motion === 'az';
   const [boot, setBoot] = useState(!booted);
   const landscape = width > height;
 
@@ -114,7 +126,13 @@ export default function NexusStart() {
     setBoot(false);
   }, []);
 
-  const artH = landscape ? Math.min(70, height * 0.16) : Math.min(80, height * 0.1);
+  const innerW = width - insets.left - insets.right - 40;
+  const cols = landscape || innerW > 700 ? 2 : 1;
+  const cardW = (innerW - (cols - 1) * 14) / cols;
+  const openTheme = (id: NexusThemeId) => {
+    update({ theme: id, lastView: 'kokpit' });
+    router.push('/kokpit');
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: pal.bg }}>
@@ -122,14 +140,13 @@ export default function NexusStart() {
       {!boot ? (
         <ScrollView
           contentContainerStyle={{
-            flexGrow: 1,
             paddingTop: insets.top + 14,
-            paddingBottom: insets.bottom + 18,
+            paddingBottom: insets.bottom + 24,
             paddingLeft: insets.left + 20,
             paddingRight: insets.right + 20,
           }}
         >
-          <Animated.View entering={reduced ? undefined : FadeIn.duration(500)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Animated.View entering={enterReduced ? undefined : FadeIn.duration(500)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Svg width={26} height={26} viewBox="0 0 100 100">
                 <Path d="M50 6 L88 28 L88 72 L50 94 L12 72 L12 28 Z" stroke={pal.primary} strokeWidth={6} fill="none" />
@@ -140,115 +157,85 @@ export default function NexusStart() {
                   NEXUS HUD
                 </NxLabel>
                 <NxLabel color={pal.dim} size={8} spacing={2}>
-                  DİJİTAL KOKPİT SİSTEMİ · PROTOTİP
+                  DİJİTAL KOKPİT SİSTEMİ
                 </NxLabel>
               </View>
             </View>
+            <HudButton icon="tune-variant" pal={pal} size={38} onPress={() => router.push('/ayarlar')} />
           </Animated.View>
 
-          <View style={{ flex: 1, justifyContent: 'center', paddingVertical: 22 }}>
-            <Animated.View entering={reduced ? undefined : FadeIn.delay(80).duration(600)}>
-              <NxLabel color={pal.primary} size={10} spacing={4}>
-                {'// MOD SEÇİMİ'}
-              </NxLabel>
-              <NxLabel color={pal.text} size={landscape ? 20 : 24} spacing={2} weight="300" style={{ marginTop: 6, marginBottom: 18, textTransform: 'none' }} numberOfLines={2}>
-                Sürüş arayüzünü seçin
-              </NxLabel>
-            </Animated.View>
-            <View style={{ flexDirection: landscape ? 'row' : 'column', gap: 14, minHeight: landscape ? 200 : 330 }}>
-              <ModeCard
-                pal={pal}
-                code="MOD 01 · CAM YANSIMASI"
-                title="WINDSHIELD HUD"
-                desc="Ön cama yansıtma · ayna görüntü · yatay · minimum bilgi"
-                delay={120}
-                reduced={reduced}
-                onPress={() => router.push('/cam')}
-                art={
-                  <View style={{ alignItems: 'center' }}>
-                    <Svg width={artH * 2.4} height={artH * 0.32} viewBox="0 0 240 32">
-                      <Path d="M20 30 L50 2 L190 2 L220 30" stroke={alpha(pal.primary, 0.5)} strokeWidth={1.2} fill="none" />
-                    </Svg>
-                    <View style={{ transform: [{ scaleX: -1 }], marginTop: 4 }}>
-                      <NxNumber text="88" height={artH * 0.62} color={pal.text} style={theme.glyph} weightScale={1.3} />
-                    </View>
-                  </View>
-                }
-              />
-              <ModeCard
-                pal={pal}
-                code="MOD 02 · TELEFON EKRANI"
-                title="DIGITAL COCKPIT"
-                desc="Holografik hız halkası · pusula · yolculuk verileri"
-                delay={220}
-                reduced={reduced}
-                onPress={() => router.push('/kokpit')}
-                art={
-                  <View style={{ width: artH * 1.25, height: artH * 1.25, alignItems: 'center', justifyContent: 'center' }}>
-                    <Svg width={artH * 1.25} height={artH * 1.25} viewBox="0 0 100 100" style={{ position: 'absolute' }}>
-                      <Circle cx={50} cy={50} r={44} stroke={alpha(pal.primary, 0.18)} strokeWidth={3} fill="none" />
-                      <Path d="M18.9 81.1 A44 44 0 1 1 94 50" stroke={pal.primary} strokeWidth={3} fill="none" />
-                      <Circle cx={50} cy={50} r={36} stroke={alpha(pal.holo, 0.5)} strokeWidth={0.8} fill="none" strokeDasharray="2 4" />
-                    </Svg>
-                    <NxNumber text="88" height={artH * 0.36} color={pal.text} style={theme.glyph} glow={pal.primary} />
-                  </View>
-                }
-              />
-            </View>
-          </View>
-
-          {/* Tüm temalar: canlı önizleme, dokununca seçilir */}
-          <Animated.View entering={reduced ? undefined : FadeInDown.delay(300).duration(500)} style={{ marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <NxLabel color={pal.primary} size={10} spacing={4}>
-                {'// TEMALAR'}
-              </NxLabel>
-              <Pressable onPress={() => router.push('/temalar')} hitSlop={8} accessibilityRole="button">
-                <NxLabel color={pal.dim} size={9} spacing={2}>
-                  TÜMÜ VE RENKLER ›
-                </NxLabel>
-              </Pressable>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 8 }}>
-              {THEME_IDS.map((id) => {
-                const t = THEMES[id];
-                const tp = paletteFor(t, day, id === nx.theme ? nx.accent : null);
-                const on = id === nx.theme;
-                return (
-                  <Pressable
-                    key={id}
-                    onPress={() => update({ theme: id })}
-                    accessibilityRole="button"
-                    accessibilityLabel={t.name}
-                    accessibilityState={{ selected: on }}
-                    style={{ width: 150, padding: 10, backgroundColor: tp.bg, borderWidth: on ? 2 : 1, borderColor: on ? tp.primary : alpha(tp.primary, 0.3), borderRadius: 6 }}
-                  >
-                    <View pointerEvents="none" style={{ alignItems: 'center', height: 104, justifyContent: 'center' }}>
-                      <Gauge kind={t.gauge} speed={88} max={220} width={Math.min(128, 104 / GAUGE_ASPECT[t.gauge])} pal={tp} glyph={t.glyph} unit="KM/H" reduced />
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 }}>
-                      {on ? <NxIcon name="check-decagram" size={13} color={tp.primary} /> : null}
-                      <NxLabel color={on ? tp.primary : tp.text} size={10} spacing={1.5} weight="800" style={{ textTransform: 'none' }}>
-                        {t.name.toUpperCase()}
-                      </NxLabel>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </Animated.View>
-
-          <Animated.View entering={reduced ? undefined : FadeInDown.delay(360).duration(500)} style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-            <HudButton icon="tune-variant" label="AYARLAR" pal={pal} onPress={() => router.push('/ayarlar')} />
+          <Animated.View entering={enterReduced ? undefined : FadeIn.delay(80).duration(600)} style={{ marginTop: 24, marginBottom: 16 }}>
+            <NxLabel color={pal.primary} size={10} spacing={4}>
+              {'// TEMA SEÇİMİ'}
+            </NxLabel>
+            <NxLabel color={pal.text} size={landscape ? 20 : 24} spacing={2} weight="300" style={{ marginTop: 6, textTransform: 'none' }} numberOfLines={2}>
+              Sürüş arayüzünü seçin
+            </NxLabel>
           </Animated.View>
           {nx.demo ? (
-            <NxLabel color={pal.warn} size={9.5} spacing={1.5} style={{ marginTop: 12 }} numberOfLines={2}>
+            <NxLabel color={pal.warn} size={9.5} spacing={1.5} style={{ marginBottom: 12 }} numberOfLines={2}>
               ⚠ DEMO VERİSİ AÇIK — göstergeler gerçek hız göstermez
             </NxLabel>
           ) : null}
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
+            <ThemeCard
+              width={cardW}
+              title="Windshield HUD"
+              category="CAM YANSIMASI"
+              desc="Ön cama yansıtma · ayna görüntü · büyük hız, minimum bilgi"
+              bg="#000000"
+              accent={wpal.primary}
+              text={pal.text}
+              dim={pal.dim}
+              selected={nx.lastView === 'cam'}
+              delay={100}
+              reduced={enterReduced}
+              onPress={() => {
+                update({ lastView: 'cam' });
+                router.push('/cam');
+              }}
+              preview={
+                <View style={{ alignItems: 'center' }}>
+                  <Svg width={240} height={30} viewBox="0 0 240 32">
+                    <Path d="M20 30 L50 2 L190 2 L220 30" stroke={alpha(wpal.primary, 0.5)} strokeWidth={1.2} fill="none" />
+                  </Svg>
+                  <View style={{ transform: [{ scaleX: -1 }], marginTop: 8 }}>
+                    <NxNumber text="88" height={92} color={wpal.text} style="prism" weightScale={1.35} />
+                  </View>
+                  <View style={{ width: 160, height: 7, marginTop: 12, backgroundColor: alpha(wpal.primary, 0.15), alignItems: 'center' }}>
+                    <View style={{ width: 70, height: 7, backgroundColor: wpal.primary }} />
+                  </View>
+                </View>
+              }
+            />
+            {THEME_IDS.map((id, i) => {
+              const t = THEMES[id];
+              const tp = id === nx.theme ? hudPal : paletteFor(t, day, null);
+              const gw = Math.min(cardW - 24, 170 / GAUGE_ASPECT[t.gauge]);
+              return (
+                <ThemeCard
+                  key={id}
+                  width={cardW}
+                  title={t.name}
+                  category="DİJİTAL KOKPİT"
+                  desc={t.tagline}
+                  bg={tp.bg}
+                  accent={tp.primary}
+                  text={tp.text}
+                  dim={alpha(tp.text, 0.65)}
+                  selected={nx.lastView === 'kokpit' && nx.theme === id}
+                  delay={160 + i * 60}
+                  reduced={enterReduced}
+                  onPress={() => openTheme(id)}
+                  preview={<Gauge kind={t.gauge} speed={60} max={220} width={gw} pal={tp} glyph={t.glyph} unit="KM/H" reduced={nx.motion === 'az'} />}
+                />
+              );
+            })}
+          </View>
         </ScrollView>
       ) : null}
-      {boot ? <BootSequence pal={hudPal} onDone={done} reduced={reduced} /> : null}
+      {boot ? <BootSequence pal={hudPal} onDone={done} reduced={enterReduced} /> : null}
     </View>
   );
 }

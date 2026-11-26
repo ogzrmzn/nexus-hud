@@ -21,7 +21,8 @@ export function useNexus(): NexusCtx {
   const theme = THEMES[nx.theme];
   const day = isDay(nx.dayNight);
   const pal = useMemo(() => paletteFor(theme, day, nx.accent), [theme, day, nx.accent]);
-  const wpal = useMemo(() => windshieldPalette(theme, day, nx.accent), [theme, day, nx.accent]);
+  // Windshield HUD kendi başına bir tema: kokpit temasından bağımsız, yalnızca vurgu rengini alır
+  const wpal = useMemo(() => windshieldPalette(THEMES.nexus, day, nx.accent), [day, nx.accent]);
   const upal = useMemo(() => uiPalette(pal), [pal]);
   return { nx, theme, pal, wpal, upal, day, update };
 }

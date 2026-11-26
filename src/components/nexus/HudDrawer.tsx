@@ -110,22 +110,6 @@ export function HudDrawer({ mode, open, onClose }: { mode: 'cam' | 'kokpit'; ope
           <HudButton icon="close" pal={pal} size={40} onPress={onClose} />
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}>
-          <Section title="MOD" {...sec}>
-            <OptionCards
-              pal={pal}
-              value={mode}
-              onChange={(m) => {
-                if (m === mode) return;
-                onClose();
-                router.replace(m === 'cam' ? '/cam' : '/kokpit');
-              }}
-              options={[
-                { value: 'cam', label: 'WINDSHIELD', icon: 'car-windshield-outline' },
-                { value: 'kokpit', label: 'COCKPIT', icon: 'view-dashboard-variant-outline' },
-              ]}
-            />
-          </Section>
-
           {mode === 'cam' ? (
             <Section title="EKRAN" {...sec}>
               <OptionCards<CamLayout>
@@ -189,16 +173,30 @@ export function HudDrawer({ mode, open, onClose }: { mode: 'cam' | 'kokpit'; ope
             />
           </Section>
 
-          <Section title="TEMA" {...sec}>
+          <Section title="TEMA" hint="Temaya dokunun; ekran hemen o temaya geçer." {...sec}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {THEME_IDS.map((id) => {
-                const t = THEMES[id];
-                const on = id === nx.theme;
-                const c = t.night.primary;
+              {(['windshield', ...THEME_IDS] as const).map((id) => {
+                const isCam = id === 'windshield';
+                const name = isCam ? 'WINDSHIELD HUD' : THEMES[id].name.toUpperCase();
+                const on = isCam ? mode === 'cam' : mode === 'kokpit' && id === nx.theme;
+                const c = isCam ? '#5CF4FF' : THEMES[id].night.primary;
                 return (
                   <Pressable
                     key={id}
-                    onPress={() => update({ theme: id })}
+                    onPress={() => {
+                      if (isCam) {
+                        if (mode === 'cam') return;
+                        update({ lastView: 'cam' });
+                        onClose();
+                        router.replace('/cam');
+                        return;
+                      }
+                      update({ theme: id, lastView: 'kokpit' });
+                      if (mode === 'cam') {
+                        onClose();
+                        router.replace('/kokpit');
+                      }
+                    }}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
                     style={{
@@ -216,9 +214,14 @@ export function HudDrawer({ mode, open, onClose }: { mode: 'cam' | 'kokpit'; ope
                     }}
                   >
                     <View style={{ width: 10, height: 10, backgroundColor: c, transform: [{ rotate: '45deg' }] }} />
-                    <NxLabel color={on ? c : pal.text} size={9.5} spacing={1} style={{ textTransform: 'none', flex: 1 }}>
-                      {t.name.toUpperCase()}
-                    </NxLabel>
+                    <View style={{ flex: 1 }}>
+                      <NxLabel color={on ? c : pal.text} size={9.5} spacing={1} style={{ textTransform: 'none' }}>
+                        {name}
+                      </NxLabel>
+                      <NxLabel color={pal.dim} size={7.5} spacing={1}>
+                        {isCam ? 'CAM YANSIMASI' : 'DİJİTAL KOKPİT'}
+                      </NxLabel>
+                    </View>
                   </Pressable>
                 );
               })}

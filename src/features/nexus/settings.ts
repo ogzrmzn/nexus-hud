@@ -3,7 +3,7 @@
  * eksik/eski alanlar her okumada varsayılanlarla tamamlanır.
  */
 
-export type NexusThemeId = 'nexus' | 'quantum' | 'hyperdrive' | 'lightspeed' | 'tachyon' | 'neon';
+export type NexusThemeId = 'nexus' | 'quantum' | 'hyperdrive' | 'lightspeed' | 'nova' | 'tachyon' | 'neon';
 export type Orientation = 'yatay' | 'dikey';
 /** Cam modunda ekran içeriği */
 export type CamLayout = 'hiz' | 'saat' | 'yolculuk';
@@ -42,6 +42,8 @@ export interface NexusSettings {
   motion: Motion;
   /** Açıkça işaretlenen demo verisi (gerçek GPS yerine) */
   demo: boolean;
+  /** Son açılan ekran (ana sayfada işaretlenir) */
+  lastView: 'cam' | 'kokpit';
 }
 
 export const DEFAULT_NEXUS: NexusSettings = {
@@ -55,15 +57,16 @@ export const DEFAULT_NEXUS: NexusSettings = {
   mirrorAxis: 'ust',
   camLayout: 'hiz',
   camOrientation: 'yatay',
-  cockpitOrientation: 'dikey',
+  cockpitOrientation: 'yatay',
   keepAwake: true,
   brightness: 1,
   speedAlert: 0,
   motion: 'tam',
   demo: false,
+  lastView: 'cam',
 };
 
-export const THEME_IDS: NexusThemeId[] = ['nexus', 'hyperdrive', 'lightspeed', 'tachyon', 'neon', 'quantum'];
+export const THEME_IDS: NexusThemeId[] = ['nexus', 'hyperdrive', 'lightspeed', 'nova', 'tachyon', 'neon', 'quantum'];
 
 /** Hız uyarısı adımı ve sınırları (seçili birimde) */
 export const ALERT_STEP = 10;
@@ -81,10 +84,11 @@ export function resolveNexus(raw: unknown): NexusSettings {
   if (!['oto', 'gunduz', 'gece'].includes(out.dayNight)) out.dayNight = 'oto';
   if (out.motion !== 'az') out.motion = 'tam';
   out.speedAlert = Math.min(ALERT_MAX, Math.max(0, Math.round(Number(out.speedAlert) || 0)));
+  if (out.lastView !== 'kokpit') out.lastView = 'cam';
   if (out.mirrorAxis !== 'alt') out.mirrorAxis = 'ust';
   if (!['hiz', 'saat', 'yolculuk'].includes(out.camLayout)) out.camLayout = 'hiz';
   if (out.camOrientation !== 'dikey') out.camOrientation = 'yatay';
-  if (out.cockpitOrientation !== 'yatay') out.cockpitOrientation = 'dikey';
+  if (out.cockpitOrientation !== 'dikey') out.cockpitOrientation = 'yatay';
   return out;
 }
 

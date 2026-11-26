@@ -11,7 +11,8 @@ export type GaugeKind =
   | 'orbit' // Yörünge: 270° çanak yay, üzerinde kayan parçacık
   | 'warp' // Warp: ufka daralan perspektif şeritler
   | 'streak' // Lightspeed: merkezden dışa akan yıldız çizgileri + açılan ışık yayı
-  | 'tunnel' // Tachyon: size doğru akan tünel halkaları
+  | 'nova' // Nova Drive: dönen spiral yıldız akışı + iki yanda açılan ışık parantezleri
+  | 'tunnel' // Tachyon: size doğru akan dairesel tünel halkaları
   | 'road'; // Neon Highway: perspektifli yol ızgarası, akan şerit çizgileri
 
 /** Kokpit veri yerleşimi */
@@ -99,10 +100,21 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     night: { ...base, bg: '#02040C', text: '#F2FAFF', primary: '#7FD6FF', secondary: '#FFFFFF', holo: '#8A7BFF', dim: '#4A5A78', glass: 'rgba(127,214,255,0.06)' },
     day: { ...base, bg: '#060A18', text: '#FFFFFF', primary: '#A6E4FF', secondary: '#FFFFFF', holo: '#A99DFF', dim: '#8494B4', glass: 'rgba(166,228,255,0.11)' },
   },
+  nova: {
+    id: 'nova',
+    name: 'Nova Drive',
+    tagline: 'Spiral yıldız akışı · iki yanda ışık parantezi · yan veri rayı',
+    gauge: 'nova',
+    layout: 'rail',
+    glyph: 'prism',
+    chamfer: 8,
+    night: { ...base, bg: '#03020D', text: '#FFFFFF', primary: '#B48CFF', secondary: '#7FE8FF', holo: '#FF7AD9', dim: '#4E4472', glass: 'rgba(180,140,255,0.07)' },
+    day: { ...base, bg: '#0A071C', text: '#FFFFFF', primary: '#CDB2FF', secondary: '#A6F0FF', holo: '#FF9DE4', dim: '#8C82B4', glass: 'rgba(205,178,255,0.12)' },
+  },
   tachyon: {
     id: 'tachyon',
     name: 'Tachyon',
-    tagline: 'Tünel halkaları · segment rakam · tek satır veri',
+    tagline: 'Dairesel ışık tüneli · segment rakam · tek satır veri',
     gauge: 'tunnel',
     layout: 'strip',
     glyph: 'segment',

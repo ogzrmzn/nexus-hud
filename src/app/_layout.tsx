@@ -25,7 +25,6 @@ function Root() {
         <Stack.Screen name="index" />
         <Stack.Screen name="cam" options={{ contentStyle: { backgroundColor: '#000' } }} />
         <Stack.Screen name="kokpit" />
-        <Stack.Screen name="temalar" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="ayarlar" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
     </>

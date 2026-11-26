@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HudButton, NxLabel, NxSwitch, OptionCards, Panel, Segmented, Stepper } from '@/components/nexus/primitives';
 import { ALERT_MAX, ALERT_STEP, DEFAULT_NEXUS, type CamLayout, type DayNight, type Orientation, type WidgetKey } from '@/features/nexus/settings';
-import { alpha, type NexusPalette } from '@/features/nexus/themes';
+import { ACCENTS, alpha, type NexusPalette } from '@/features/nexus/themes';
 import { useNexus } from '@/features/nexus/useNexus';
 
 const WIDGETS: [WidgetKey, string][] = [
@@ -78,7 +78,6 @@ export default function NexusSettingsScreen() {
               AYARLAR
             </NxLabel>
           </View>
-          <HudButton icon="palette-swatch-variant" label={theme.name.toUpperCase()} pal={pal} onPress={() => router.push('/temalar')} />
         </View>
 
         <Section pal={pal} chamfer={theme.chamfer} title="GÖRÜNÜM">
@@ -93,6 +92,29 @@ export default function NexusSettingsScreen() {
                 { value: 'gece', label: 'GECE' },
               ]}
             />
+          </Field>
+          <Field pal={pal} label="RENK">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {[{ name: 'Tema', color: null as string | null }, ...ACCENTS].map((c) => {
+                const on = nx.accent === c.color;
+                const sw = c.color ?? theme.night.primary;
+                return (
+                  <Pressable
+                    key={c.name}
+                    onPress={() => update({ accent: c.color })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Renk ${c.name}`}
+                    accessibilityState={{ selected: on }}
+                    style={{ alignItems: 'center', gap: 4 }}
+                  >
+                    <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: sw, borderWidth: on ? 3 : c.color ? 0 : 2, borderColor: pal.text }} />
+                    <NxLabel color={on ? pal.text : pal.dim} size={8} spacing={0.5}>
+                      {c.name}
+                    </NxLabel>
+                  </Pressable>
+                );
+              })}
+            </View>
           </Field>
           <Field pal={pal} label="HIZ GÖSTERGESİ BOYUTU">
             <Segmented<number>

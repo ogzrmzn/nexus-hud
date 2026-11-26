@@ -103,6 +103,41 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
     if (demo || !active) return;
     let sub: Location.LocationSubscription | null = null;
     let alive = true;
+    // Web (telefon tarayıcısı): yüksek doğruluklu GPS'i doğrudan iste. expo-location web'de
+    // enableHighAccuracy göndermediği için telefon kaba ağ konumu verir ve hız ölçülemez.
+    if (Platform.OS === 'web') {
+      const geo = typeof navigator !== 'undefined' ? navigator.geolocation : undefined;
+      if (!geo) {
+        setBase('servis-kapali');
+        return;
+      }
+      setBase('izin');
+      const id = geo.watchPosition(
+        (pos) => {
+          if (!alive) return;
+          setBase('bagli');
+          onPoint({
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+            time: pos.timestamp || Date.now(),
+            speed: pos.coords.speed,
+            heading: pos.coords.heading,
+            accuracy: pos.coords.accuracy,
+          });
+        },
+        (err) => {
+          if (!alive) return;
+          if (err.code === err.PERMISSION_DENIED) setBase('reddedildi');
+          // Konum geçici olarak alınamadıysa (kapalı alan, zaman aşımı) aramaya devam edilir
+          else setBase((b) => (b === 'izin' ? 'bagli' : b));
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
+      );
+      return () => {
+        alive = false;
+        geo.clearWatch(id);
+      };
+    }
     (async () => {
       setBase('izin');
       const perm = await Location.requestForegroundPermissionsAsync();
@@ -212,7 +247,7 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
 
 export const STATUS_TEXT: Record<GpsStatus, { title: string; detail: string }> = {
   izin: { title: 'KONUM İZNİ', detail: 'Hız ölçümü için konum izni bekleniyor' },
-  reddedildi: { title: 'İZİN YOK', detail: 'Hız ölçmek için konum izni verin' },
+  reddedildi: { title: 'İZİN YOK', detail: Platform.OS === 'web' ? 'Tarayıcıda adres çubuğundaki simgeden bu siteye konum izni verin' : 'Hız ölçmek için konum izni verin' },
   'servis-kapali': { title: 'KONUM KAPALI', detail: 'Cihazın konum servisini açın' },
   araniyor: { title: 'UYDU ARANIYOR', detail: 'GPS bağlantısı kuruluyor' },
   bagli: { title: 'GPS BAĞLI', detail: '' },

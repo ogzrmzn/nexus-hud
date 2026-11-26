@@ -1,12 +1,11 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import Animated, {
-  cancelAnimation,
   Easing,
+  useFrameCallback,
   useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -37,7 +36,7 @@ export interface GaugeProps {
 }
 
 /** Göstergenin yükseklik/genişlik oranı */
-export const GAUGE_ASPECT: Record<GaugeKind, number> = { blade: 0.78, orbit: 0.92, warp: 0.66, streak: 0.8, tunnel: 0.78, road: 0.66 };
+export const GAUGE_ASPECT: Record<GaugeKind, number> = { blade: 0.78, orbit: 0.92, warp: 0.66, streak: 0.8, nova: 0.8, tunnel: 0.78, road: 0.66 };
 
 const D2R = Math.PI / 180;
 const pt = (cx: number, cy: number, r: number, deg: number) => [cx + r * Math.cos(deg * D2R), cy + r * Math.sin(deg * D2R)] as const;
@@ -89,21 +88,31 @@ function useFraction(speed: number | null, max: number, reduced?: boolean): Shar
 }
 
 /** Hızla hızlanan sürekli döngü (0→1); "az" modda durur */
+/**
+ * Hıza bağlı sürekli akış evresi (0→1, döngüsel). Dururken de yavaşça akar; hız arttıkça akış hızı
+ * kesintisiz (atlamadan) artar. UI thread'de kare başına ilerler; yalnızca "az animasyon" ayarında durur.
+ */
+/** Akışın en hızlı olduğu hız (seçili birimde) */
+export const FLOW_FULL_SPEED = 120;
+
 function useLoop(speed: number | null, reduced: boolean | undefined, slowMs: number, fastMs: number): SharedValue<number> {
-  const t = useSharedValue(0);
-  const bucket = speed == null ? -1 : Math.min(8, Math.round(speed / 25));
+  const phase = useSharedValue(0);
+  const rate = useSharedValue(1 / slowMs);
+  // 10 → yavaş, 50 → orta, 100 → hızlı, 120 ve üstü → en hızlı (doğrusal, atlamasız)
+  const k = Math.min(1, Math.max(0, (speed ?? 0) / FLOW_FULL_SPEED));
   useEffect(() => {
-    cancelAnimation(t);
-    if (reduced || bucket < 0) {
-      t.value = 0;
-      return;
-    }
-    const dur = slowMs - ((slowMs - fastMs) * bucket) / 8;
-    t.value = 0;
-    t.value = withRepeat(withTiming(1, { duration: dur, easing: Easing.linear }), -1, false);
-    return () => cancelAnimation(t);
-  }, [bucket, reduced, slowMs, fastMs, t]);
-  return t;
+    const target = 1 / slowMs + (1 / fastMs - 1 / slowMs) * k;
+    rate.value = withTiming(target, { duration: 900, easing: Easing.inOut(Easing.quad) });
+  }, [k, slowMs, fastMs, rate]);
+  const cb = useFrameCallback((f) => {
+    const dt = Math.min(64, f.timeSincePreviousFrame ?? 16);
+    phase.value = (phase.value + dt * rate.value) % 1;
+  }, false);
+  useEffect(() => {
+    cb.setActive(!reduced);
+    return () => cb.setActive(false);
+  }, [reduced, cb]);
+  return phase;
 }
 
 /** Ortadaki hız + birim */
@@ -268,7 +277,7 @@ const WarpGauge = memo(function WarpGauge({ speed, max, width, pal, glyph, unit,
   const h = width * GAUGE_ASPECT.warp;
   const shown = useTweenedSpeed(speed, reduced);
   const f = useFraction(speed, max, reduced);
-  const flow = useLoop(speed == null ? 0 : speed, reduced, 2600, 380);
+  const flow = useLoop(speed == null ? 0 : speed, reduced, 4000, 380);
   const streakProps = useAnimatedProps(() => ({ strokeDashoffset: flow.value * WARP_PERIOD }));
   const barProps = useAnimatedProps(() => {
     const w = 70 * f.value;
@@ -318,7 +327,7 @@ const StreakGauge = memo(function StreakGauge({ speed, max, width, pal, glyph, u
   const h = width * GAUGE_ASPECT.streak;
   const shown = useTweenedSpeed(speed, reduced);
   const f = useFraction(speed, max, reduced);
-  const flow = useLoop(speed == null ? 0 : speed, reduced, 3000, 320);
+  const flow = useLoop(speed == null ? 0 : speed, reduced, 4500, 320);
   const streakProps = useAnimatedProps(() => ({ strokeDashoffset: -flow.value * STREAK_PERIOD }));
   const arcProps = useAnimatedProps(() => ({ strokeDashoffset: LS_LEN * (1 - f.value) }));
   const glowProps = useAnimatedProps(() => ({ strokeDashoffset: LS_LEN * (1 - f.value) }));
@@ -342,23 +351,29 @@ const StreakGauge = memo(function StreakGauge({ speed, max, width, pal, glyph, u
 });
 
 // ---------------------------------------------------------------------------
-// 5) Tachyon — Tünel
+// 5) Tachyon — Dairesel ışık tüneli
 // ---------------------------------------------------------------------------
-const TUNNEL_N = 6;
-const TUNNEL_RING = 'M30 6 L70 6 L84 20 L84 50 L70 64 L30 64 L16 50 L16 20 Z';
+const TUNNEL_N = 7;
 const TUNNEL_SEGS = 20;
+const TUNNEL_SPOKES = Array.from({ length: 16 }, (_, i) => {
+  const a = (i * 360) / 16;
+  const p0 = pt(50, 35, 6, a);
+  const p1 = pt(50, 35, 70, a);
+  return `M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}L${p1[0].toFixed(2)} ${p1[1].toFixed(2)}`;
+}).join('');
 
+/** Tek tünel halkası: uzaktan (küçük, soluk) yakına (büyük) akar ve kaybolur */
 function TunnelRing({ i, t, w, h, color }: { i: number; t: SharedValue<number>; w: number; h: number; color: string }) {
   const style = useAnimatedStyle(() => {
     const q = (t.value + i / TUNNEL_N) % 1;
-    const scale = 0.12 + q * q * 1.15;
-    const op = q < 0.15 ? q / 0.15 : q > 0.85 ? (1 - q) / 0.15 : 1;
-    return { transform: [{ scale }], opacity: op * 0.85 };
+    const scale = 0.06 + q * q * q * 1.6;
+    const op = q < 0.12 ? q / 0.12 : q > 0.8 ? Math.max(0, (1 - q) / 0.2) : 1;
+    return { transform: [{ scale }, { rotate: `${q * 40 * (i % 2 ? 1 : -1)}deg` }], opacity: op };
   });
   return (
     <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, top: 0, width: w, height: h }, style]}>
       <Svg width={w} height={h} viewBox="0 0 100 70">
-        <Path d={TUNNEL_RING} stroke={color} strokeWidth={1.1} fill="none" strokeLinejoin="miter" />
+        <Ellipse cx={50} cy={35} rx={44} ry={33} stroke={color} strokeWidth={1.3} fill="none" strokeDasharray={i % 2 ? '7 3' : '18 4 2 4'} />
       </Svg>
     </Animated.View>
   );
@@ -367,16 +382,16 @@ function TunnelRing({ i, t, w, h, color }: { i: number; t: SharedValue<number>; 
 const TunnelGauge = memo(function TunnelGauge({ speed, max, width, pal, glyph, unit, over, reduced, center }: GaugeProps) {
   const h = width * GAUGE_ASPECT.tunnel;
   const shown = useTweenedSpeed(speed, reduced);
-  const t = useLoop(speed == null ? 0 : speed, reduced, 4200, 700);
+  const t = useLoop(speed == null ? 0 : speed, reduced, 6000, 520);
   const lit = shown == null ? 0 : Math.round(Math.min(1, shown / max) * TUNNEL_SEGS);
   const ringH = h * 0.86;
   const col = over ? pal.danger : pal.primary;
   return (
     <View style={{ width, height: h, overflow: 'hidden' }}>
-      <View style={{ position: 'absolute', left: 0, top: 0, width, height: ringH }}>
+      <View style={{ position: 'absolute', left: 0, top: 0, width, height: ringH, overflow: 'hidden' }}>
         <Svg width={width} height={ringH} viewBox="0 0 100 70" style={{ position: 'absolute' }}>
-          <Path d="M16 20 L50 35 M84 20 L50 35 M16 50 L50 35 M84 50 L50 35" stroke={alpha(pal.holo, 0.3)} strokeWidth={0.3} />
-          <Path d={TUNNEL_RING} stroke={alpha(pal.primary, 0.5)} strokeWidth={0.6} fill="none" />
+          <Path d={TUNNEL_SPOKES} stroke={alpha(pal.holo, 0.22)} strokeWidth={0.3} />
+          <Circle cx={50} cy={35} r={5} fill={alpha(pal.primary, 0.35)} />
         </Svg>
         {Array.from({ length: TUNNEL_N }, (_, i) => (
           <TunnelRing key={i} i={i} t={t} w={width} h={ringH} color={i % 2 ? pal.secondary : pal.primary} />
@@ -397,10 +412,72 @@ const TunnelGauge = memo(function TunnelGauge({ speed, max, width, pal, glyph, u
       </View>
       <CenterBox top={0} height={ringH}>
         {center ?? (
-          <View style={{ backgroundColor: alpha(pal.bg, 0.78), paddingHorizontal: width * 0.04, paddingVertical: h * 0.02 }}>
-            <Readout value={shown} height={h * 0.28} pal={pal} glyph={glyph} unit={unit} over={over} />
+          <View style={{ backgroundColor: alpha(pal.bg, 0.72), paddingHorizontal: width * 0.04, paddingVertical: h * 0.02, borderRadius: h * 0.06 }}>
+            <Readout value={shown} height={h * 0.3} pal={pal} glyph={glyph} unit={unit} over={over} />
           </View>
         )}
+      </CenterBox>
+    </View>
+  );
+});
+
+// ---------------------------------------------------------------------------
+// 7) Nova Drive — Spiral yıldız akışı
+// ---------------------------------------------------------------------------
+const NOVA_D = Array.from({ length: 40 }, (_, i) => {
+  const a = (i * 360) / 40;
+  const r0 = 12 + (i % 4) * 2.5;
+  // hafif kıvrık (spiral) çizgi
+  const p0 = pt(50, 50, r0, a);
+  const pm = pt(50, 50, 36, a + 9);
+  const p1 = pt(50, 50, 72, a + 22);
+  return `M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}Q${pm[0].toFixed(2)} ${pm[1].toFixed(2)} ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}`;
+}).join('');
+const NOVA_PERIOD = 12;
+const BR_R = 36;
+const BR_SPAN = 76;
+const BR_LEN = BR_R * BR_SPAN * D2R;
+// sol parantez: alttan (142°) yukarı (218°); sağ parantez: alttan (38°) yukarı (-38°)
+const BR_L = (() => {
+  const a = pt(50, 40, BR_R, 180 - BR_SPAN / 2 + 0);
+  const b = pt(50, 40, BR_R, 180 + BR_SPAN / 2);
+  return `M${a[0].toFixed(2)} ${a[1].toFixed(2)} A${BR_R} ${BR_R} 0 0 1 ${b[0].toFixed(2)} ${b[1].toFixed(2)}`;
+})();
+const BR_R2 = (() => {
+  const a = pt(50, 40, BR_R, BR_SPAN / 2);
+  const b = pt(50, 40, BR_R, -BR_SPAN / 2);
+  return `M${a[0].toFixed(2)} ${a[1].toFixed(2)} A${BR_R} ${BR_R} 0 0 0 ${b[0].toFixed(2)} ${b[1].toFixed(2)}`;
+})();
+
+const NovaGauge = memo(function NovaGauge({ speed, max, width, pal, glyph, unit, over, reduced, center }: GaugeProps) {
+  const h = width * GAUGE_ASPECT.nova;
+  const shown = useTweenedSpeed(speed, reduced);
+  const f = useFraction(speed, max, reduced);
+  const flow = useLoop(speed == null ? 0 : speed, reduced, 4200, 300);
+  const spin = useLoop(speed == null ? 0 : speed, reduced, 40000, 7000);
+  const streakProps = useAnimatedProps(() => ({ strokeDashoffset: -flow.value * NOVA_PERIOD }));
+  const spinStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
+  const lProps = useAnimatedProps(() => ({ strokeDashoffset: BR_LEN * (1 - f.value) }));
+  const rProps = useAnimatedProps(() => ({ strokeDashoffset: BR_LEN * (1 - f.value) }));
+  const col = over ? pal.danger : pal.primary;
+  const sq = Math.max(width, h) * 1.15;
+  return (
+    <View style={{ width, height: h, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View pointerEvents="none" style={[{ position: 'absolute', width: sq, height: sq }, spinStyle]}>
+        <Svg width={sq} height={sq} viewBox="0 0 100 100">
+          <Path d={NOVA_D} stroke={alpha(pal.holo, 0.14)} strokeWidth={0.3} fill="none" />
+          <APath d={NOVA_D} stroke={alpha(pal.secondary, 0.8)} strokeWidth={0.4} fill="none" strokeLinecap="round" strokeDasharray="1.4 10.6" animatedProps={streakProps} />
+        </Svg>
+      </Animated.View>
+      <Svg width={width} height={h} viewBox="0 0 100 80" style={{ position: 'absolute' }}>
+        <Ellipse cx={50} cy={40} rx={29} ry={25} fill={alpha(pal.bg, 0.86)} />
+        <Path d={`${BR_L}${BR_R2}`} stroke={alpha(pal.primary, 0.16)} strokeWidth={2.2} fill="none" strokeLinecap="round" />
+        <APath d={BR_L} stroke={col} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeDasharray={`${BR_LEN} ${BR_LEN}`} animatedProps={lProps} />
+        <APath d={BR_R2} stroke={col} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeDasharray={`${BR_LEN} ${BR_LEN}`} animatedProps={rProps} />
+        <Path d="M50 9 L50 13 M50 67 L50 71" stroke={pal.holo} strokeWidth={0.8} />
+      </Svg>
+      <CenterBox top={0} height={h}>
+        {center ?? <Readout value={shown} height={h * 0.3} pal={pal} glyph={glyph} unit={unit} over={over} />}
       </CenterBox>
     </View>
   );
@@ -422,7 +499,7 @@ const RoadGauge = memo(function RoadGauge({ speed, max, width, pal, glyph, unit,
   const h = width * GAUGE_ASPECT.road;
   const shown = useTweenedSpeed(speed, reduced);
   const f = useFraction(speed, max, reduced);
-  const flow = useLoop(speed == null ? 0 : speed, reduced, 2600, 330);
+  const flow = useLoop(speed == null ? 0 : speed, reduced, 4000, 330);
   const gridProps = useAnimatedProps(() => {
     let d = '';
     for (let k = 0; k < 7; k++) {
@@ -464,6 +541,8 @@ export function Gauge({ kind, ...p }: GaugeProps & { kind: GaugeKind }) {
       return <StreakGauge {...p} />;
     case 'tunnel':
       return <TunnelGauge {...p} />;
+    case 'nova':
+      return <NovaGauge {...p} />;
     case 'road':
       return <RoadGauge {...p} />;
     default:

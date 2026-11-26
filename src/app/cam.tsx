@@ -21,7 +21,7 @@ import { STATUS_TEXT, useNexusGps } from '@/features/nexus/useNexusGps';
  * tek büyük hız. Glow, sürekli animasyon ve küçük yazı yok: camda çift görüntü yapar ve göz yorar.
  */
 export default function Windshield() {
-  const { nx, theme, wpal: pal } = useNexus();
+  const { nx, wpal: pal } = useNexus();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const gps = useNexusGps({ demo: nx.demo, compass: false });
@@ -61,7 +61,7 @@ export default function Windshield() {
   const barW = W * 0.7;
   const barStyle = useAnimatedStyle(() => ({ width: barW * frac.value }));
 
-  const glyph = theme.glyph === 'hairline' ? 'mono' : theme.glyph;
+  const glyph = 'prism' as const;
   const ratio = measureNx('188', 1, glyph);
   const extras = layout !== 'hiz';
   const numH = Math.min(H * (extras ? 0.44 : 0.56), (W * 0.84) / ratio) * nx.gaugeScale;
