@@ -231,7 +231,8 @@ export function windshieldPalette(theme: NexusTheme, light: boolean | number, ac
   const night: NexusPalette = {
     ...p,
     bg: '#000000',
-    text: '#7FA9B5',
+    // Hız rakamı gece de beyaz kalır; gece camda parlamayı parlaklık kısma sağlar (renk griye dönmez)
+    text: '#FFFFFF',
     primary: accent ? shade(accent, 0.6) : '#21808F',
     dim: '#3E5560',
     warn: shade(p.warn, 0.7),

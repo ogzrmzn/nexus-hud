@@ -71,7 +71,10 @@ describe('NEXUS temalar', () => {
       expect(lum(n.text)).toBeLessThan(lum(d.text) * 0.8);
       expect(lum(n.bg)).toBeLessThan(lum(d.bg));
     }
-    expect(windshieldPalette(THEMES.nexus, false, null).text).not.toBe(windshieldPalette(THEMES.nexus, true, null).text);
+    // Windshield hız rakamı gündüz de gece de beyaz
+    expect(windshieldPalette(THEMES.nexus, false, null).text).toBe('#FFFFFF');
+    expect(windshieldPalette(THEMES.nexus, true, null).text).toBe('#FFFFFF');
+    expect(windshieldPalette(THEMES.nexus, false, null).primary).not.toBe(windshieldPalette(THEMES.nexus, true, null).primary);
   });
   it('alpha', () => {
     expect(alpha('#FFFFFF', 0.5)).toBe('#FFFFFF80');
