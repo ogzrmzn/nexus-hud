@@ -1,5 +1,4 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Platform, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
@@ -7,12 +6,12 @@ import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, w
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Line } from 'react-native-svg';
 import { GAUGE_ASPECT, Gauge } from '@/components/nexus/Gauges';
-import { CompassDial, GpsScan, SignalAlert, SignalIndicator } from '@/components/nexus/Instruments';
-import { NxNumber } from '@/components/nexus/NxNumber';
+import { CompassDial, GpsScan, SignalAlert } from '@/components/nexus/Instruments';
 import { DimOverlay, HudDrawer } from '@/components/nexus/HudDrawer';
+import { HudHeader } from '@/components/nexus/HudHeader';
 import { DataCell, HudButton, NxIcon, NxLabel } from '@/components/nexus/primitives';
 import { avgKmh } from '@/features/nexus/trip';
-import { clockDuration, clockText, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
+import { clockDuration, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
 import { alpha, type NexusPalette } from '@/features/nexus/themes';
 import { useHudSystem } from '@/features/nexus/useHudSystem';
 import { useNexus, useRememberPosition } from '@/features/nexus/useNexus';
@@ -180,21 +179,17 @@ export default function Cockpit() {
         style={{ flex: 1, paddingTop: insets.top + 10, paddingBottom: insets.bottom + 10, paddingLeft: insets.left + 16, paddingRight: insets.right + 16 }}
       >
         {/* Üst şerit */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 40 }}>
-          <HudButton icon="arrow-left" pal={pal} size={36} onPress={() => router.back()} label={undefined} />
-          {w.gps ? <SignalIndicator status={gps.status} accuracy={gps.accuracy} pal={pal} /> : null}
-          <View style={{ flex: 1, alignItems: 'center' }}>{w.clock ? <NxNumber text={clockText(new Date(gps.now))} height={Math.max(16, cellSize * 0.75)} color={pal.text} style={theme.glyph === 'hairline' ? 'hairline' : 'mono'} /> : null}</View>
-          {weather ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <NxIcon name={weather.icon} size={16} color={pal.secondary} />
-              <NxLabel color={pal.text} size={11} spacing={1}>
-                {`${weather.temp}°`}
-              </NxLabel>
-            </View>
-          ) : null}
-          {moving ? null : <HudButton icon="restart" pal={pal} size={36} onPress={gps.resetTrip} />}
-          <HudButton icon="menu" pal={pal} size={36} label="PANEL" active onPress={() => setDrawer(true)} />
-        </View>
+        <HudHeader
+          pal={pal}
+          gps={gps}
+          showGps={w.gps}
+          showClock={w.clock}
+          clockHeight={Math.max(16, cellSize * 0.75)}
+          glyph={theme.glyph === 'hairline' ? 'hairline' : 'mono'}
+          weather={weather}
+          moving={moving}
+          onPanel={() => setDrawer(true)}
+        />
         {alert ? <View style={{ marginTop: 8, alignItems: 'center' }}>{alert}</View> : null}
         {/* Cama yansıtma: gösterge ve veriler çevrilir; üst şerit (düğmeler) düz kalır */}
         <View style={{ flex: 1, marginTop: 8, transform: !nx.cockpitMirror ? [] : nx.mirrorAxis === 'ust' ? [{ scaleY: -1 }] : [{ scaleX: -1 }] }}>{body}</View>

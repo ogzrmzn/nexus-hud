@@ -1,14 +1,14 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Platform, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { measureNx, NxNumber } from '@/components/nexus/NxNumber';
 import { DimOverlay, HudDrawer } from '@/components/nexus/HudDrawer';
+import { HudHeader } from '@/components/nexus/HudHeader';
 import { HudButton, NxLabel } from '@/components/nexus/primitives';
-import { clockDuration, clockText, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
+import { clockDuration, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
 import { alpha } from '@/features/nexus/themes';
 import { useHudSystem } from '@/features/nexus/useHudSystem';
 import { useNexus, useRememberPosition } from '@/features/nexus/useNexus';
@@ -25,7 +25,6 @@ export default function Windshield() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const gps = useNexusGps({ demo: nx.demo, compass: false });
-  const [controls, setControls] = useState(true);
   const [drawer, setDrawer] = useState(false);
   useHudSystem({ keepAwake: nx.keepAwake, brightness, orientation: nx.camOrientation });
   useRememberPosition(nx.demo ? null : gps.trip.last);
@@ -36,13 +35,6 @@ export default function Windshield() {
   const showClock = nx.widgets.clock;
   const showDist = nx.widgets.distance;
   const showTime = nx.widgets.tripTime;
-
-  // Kontroller 5 sn sonra kaybolur (panel açıkken kalır)
-  useEffect(() => {
-    if (!controls || drawer) return;
-    const t = setTimeout(() => setControls(false), 5000);
-    return () => clearTimeout(t);
-  }, [controls, drawer]);
 
   // Hız uyarısı: 3 kez yanıp söner + tek titreşim, sınırın üstünde kırmızı kalır
   const flash = useSharedValue(1);
@@ -74,43 +66,51 @@ export default function Windshield() {
   const fixed = gps.lastFixAt != null;
 
   const needsAction = gps.status === 'reddedildi' || gps.status === 'servis-kapali';
-  const clock = clockText(new Date(gps.now));
   const flip = !nx.mirror ? [] : nx.mirrorAxis === 'ust' ? [{ scaleY: -1 }] : [{ scaleX: -1 }];
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
       <StatusBar hidden />
-      <Pressable style={StyleSheet.absoluteFill} onPress={() => setControls((v) => !v)} accessibilityLabel="Kontrolleri göster/gizle" />
+      {/* Üst çubuk: diğer temalarla aynı (aynalanmaz) */}
+      <View style={{ paddingTop: insets.top + 10, paddingLeft: insets.left + 16, paddingRight: insets.right + 16 }}>
+        <HudHeader
+          pal={pal}
+          gps={gps}
+          showGps={nx.widgets.gps}
+          showClock={showClock}
+          clockHeight={Math.max(16, Math.min(34, Math.min(width, height) * 0.058) * 0.75)}
+          glyph="mono"
+          moving={(gps.speedKmh ?? 0) > 10}
+          onPanel={() => setDrawer(true)}
+        />
+        {needsAction ? (
+          <View style={{ alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <HudButton icon="crosshairs-gps" pal={pal} label={gps.status === 'reddedildi' ? 'İZİN VER' : 'TEKRAR DENE'} active onPress={gps.retry} />
+            <NxLabel color={pal.dim} size={9.5} spacing={1}>
+              {statusInfo.detail}
+            </NxLabel>
+          </View>
+        ) : null}
+      </View>
       {/* --- Yansıyan katman --- */}
       <View
         pointerEvents="none"
         style={{
           flex: 1,
-          paddingTop: insets.top + 12,
+          paddingTop: 8,
           paddingBottom: insets.bottom + 12,
           paddingLeft: insets.left + 20,
           paddingRight: insets.right + 20,
           transform: flip,
         }}
       >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: auxH * 1.2 }}>
-          {showClock ? <NxNumber text={clock} height={bigAux} color={pal.text} style={glyph} weightScale={1.25} /> : <View />}
-          {nx.demo ? (
+        {nx.demo ? (
+          <View style={{ alignItems: 'center' }}>
             <NxLabel color={pal.warn} size={auxH * 0.7} spacing={4} weight="800">
               DEMO
             </NxLabel>
-          ) : null}
-          {nx.widgets.gps ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ width: auxH * 0.42, height: auxH * 0.42, borderRadius: auxH, backgroundColor: gps.status === 'bagli' || gps.status === 'demo' ? pal.primary : pal.warn }} />
-              <NxLabel color={gps.status === 'bagli' || gps.status === 'demo' ? pal.dim : pal.warn} size={auxH * 0.62} spacing={2} weight="800">
-                GPS
-              </NxLabel>
-            </View>
-          ) : (
-            <View />
-          )}
-        </View>
+          </View>
+        ) : null}
 
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Animated.View style={over ? flashStyle : undefined}>
@@ -127,12 +127,12 @@ export default function Windshield() {
         {showDist || showTime ? (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             {showDist ? (
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
-              <NxNumber text={fixed ? distanceText(gps.trip.distanceM, nx.unit) : '--'} height={bigAux} color={pal.text} style={glyph} weightScale={1.25} />
-              <NxLabel color={pal.dim} size={auxH * 0.6} spacing={2} weight="800">
-                {distUnitLabel(nx.unit)}
-              </NxLabel>
-            </View>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+                <NxNumber text={fixed ? distanceText(gps.trip.distanceM, nx.unit) : '--'} height={bigAux} color={pal.text} style={glyph} weightScale={1.25} />
+                <NxLabel color={pal.dim} size={auxH * 0.6} spacing={2} weight="800">
+                  {distUnitLabel(nx.unit)}
+                </NxLabel>
+              </View>
             ) : (
               <View />
             )}
@@ -140,38 +140,6 @@ export default function Windshield() {
           </View>
         ) : null}
       </View>
-
-      {/* --- Kontroller (aynalanmaz; araç dururken okunur) --- */}
-      {controls || needsAction ? (
-        <View
-          style={{
-            position: 'absolute',
-            left: insets.left + 12,
-            right: insets.right + 12,
-            top: insets.top + 6,
-            // Düz siyah şerit: aynalı görüntüde altta kalan rakamlar düğmelerin arkasından görünmesin
-            padding: 6,
-            borderRadius: 26,
-            backgroundColor: 'rgba(0,0,0,0.94)',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <HudButton icon="arrow-left" pal={pal} size={36} onPress={() => router.back()} />
-          {(gps.speedKmh ?? 0) > 10 ? null : <HudButton icon="restart" pal={pal} size={36} onPress={gps.resetTrip} />}
-          <View style={{ flex: 1 }} />
-          {needsAction ? <HudButton icon="crosshairs-gps" pal={pal} label={gps.status === 'reddedildi' ? 'İZİN VER' : 'TEKRAR DENE'} active onPress={gps.retry} /> : null}
-          <HudButton icon="menu" pal={pal} size={36} label="PANEL" active onPress={() => setDrawer(true)} />
-        </View>
-      ) : null}
-      {controls && !drawer ? (
-        <View pointerEvents="none" style={{ position: 'absolute', bottom: insets.bottom + 10, left: 0, right: 0, alignItems: 'center' }}>
-          <NxLabel color={pal.dim} size={9.5} spacing={1.5}>
-            {needsAction ? statusInfo.detail : 'DOKUN: KONTROLLER · PANEL: TÜM SEÇENEKLER'}
-          </NxLabel>
-        </View>
-      ) : null}
       <DimOverlay brightness={brightness} />
       <HudDrawer mode="cam" open={drawer} onClose={() => setDrawer(false)} />
     </View>
