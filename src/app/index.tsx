@@ -13,6 +13,9 @@ import { THEME_IDS, type NexusThemeId } from '@/features/nexus/settings';
 import { alpha, paletteFor, THEMES, type NexusPalette } from '@/features/nexus/themes';
 import { useNexus } from '@/features/nexus/useNexus';
 
+/** Ekranda görünen sürüm etiketi: telefonda hangi sürümün açıldığını doğrulamak için */
+const APP_BUILD = 'SÜRÜM 4 · 26.11';
+
 /** Başlatma animasyonu uygulama oturumu başına bir kez */
 let booted = false;
 
@@ -157,7 +160,7 @@ export default function NexusStart() {
                   NEXUS HUD
                 </NxLabel>
                 <NxLabel color={pal.dim} size={8} spacing={2}>
-                  DİJİTAL KOKPİT SİSTEMİ
+                  {`DİJİTAL KOKPİT SİSTEMİ · ${APP_BUILD}`}
                 </NxLabel>
               </View>
             </View>
