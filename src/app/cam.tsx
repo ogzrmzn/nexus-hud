@@ -160,7 +160,7 @@ export default function Windshield() {
           </NxLabel>
         </View>
       ) : null}
-      <HudDrawer mode="cam" open={drawer} onClose={() => setDrawer(false)} />
+      <HudDrawer mode="cam" open={drawer} onClose={() => setDrawer(false)} gps={gps} />
     </View>
   );
 }

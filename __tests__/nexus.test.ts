@@ -60,9 +60,9 @@ describe('NEXUS ayarlar', () => {
 });
 
 describe('NEXUS temalar', () => {
-  it('yedi kokpit teması; her birinin gösterge geometrisi farklı', () => {
-    expect(THEME_IDS).toHaveLength(7);
-    expect(new Set(THEME_IDS.map((t) => THEMES[t].gauge)).size).toBe(7);
+  it('altı kokpit teması; her birinin gösterge geometrisi farklı', () => {
+    expect(THEME_IDS).toHaveLength(6);
+    expect(new Set(THEME_IDS.map((t) => THEMES[t].gauge)).size).toBe(6);
     expect(THEME_IDS).not.toContain('cyber');
     expect(THEME_IDS).not.toContain('darkmatter');
   });
@@ -84,6 +84,9 @@ describe('NEXUS GPS dürüstlüğü', () => {
     expect(deriveStatus('bagli', null, null, 0)).toBe('araniyor');
     expect(deriveStatus('bagli', 0, 5, LOST_AFTER_MS + 1)).toBe('kayip');
     expect(deriveStatus('bagli', 0, 80, 1000)).toBe('zayif');
+    // cihaz hızı kendisi ölçüyorsa 100 m'ye kadar hız gösterilir
+    expect(deriveStatus('bagli', 0, 80, 1000, true)).toBe('bagli');
+    expect(deriveStatus('bagli', 0, 120, 1000, true)).toBe('zayif');
     expect(deriveStatus('bagli', 0, 5, 1000)).toBe('bagli');
     expect(deriveStatus('reddedildi', 0, 5, 1000)).toBe('reddedildi');
   });

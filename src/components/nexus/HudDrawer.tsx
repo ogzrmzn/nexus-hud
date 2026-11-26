@@ -7,6 +7,7 @@ import { ALERT_MAX, ALERT_STEP, THEME_IDS, type CamLayout, type DayNight, type O
 import { ACCENTS, alpha, THEMES } from '@/features/nexus/themes';
 import { isFullscreen, toggleFullscreen } from '@/features/nexus/useHudSystem';
 import { useNexus } from '@/features/nexus/useNexus';
+import { STATUS_TEXT, type NexusGps } from '@/features/nexus/useNexusGps';
 import { unitLabel } from '@/features/nexus/format';
 import { HudButton, NxIcon, NxLabel, OptionCards, Segmented, Stepper } from './primitives';
 
@@ -32,7 +33,7 @@ function Section({ title, hint, children, color, hintColor }: { title: string; h
  * Sağdan açılan kontrol paneli: HUD ve kokpitten çıkmadan ekran içeriği, tema, renk, ekran yönü (kilitli),
  * cam görünümü, hız uyarısı ve parlaklık. Cam modunda aynalanmaz (araç dururken düz okunur).
  */
-export function HudDrawer({ mode, open, onClose }: { mode: 'cam' | 'kokpit'; open: boolean; onClose: () => void }) {
+export function HudDrawer({ mode, open, onClose, gps }: { mode: 'cam' | 'kokpit'; open: boolean; onClose: () => void; gps?: NexusGps }) {
   const { nx, upal: pal, day, update } = useNexus();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -287,6 +288,36 @@ export function HudDrawer({ mode, open, onClose }: { mode: 'cam' | 'kokpit'; ope
               ]}
             />
           </Section>
+
+          {gps ? (
+            <Section title="GPS TANI" hint="Hız görünmüyorsa bu bölümün ekran görüntüsünü gönderin." {...sec}>
+              <View style={{ gap: 5, padding: 10, borderWidth: 1, borderColor: alpha(pal.primary, 0.25), backgroundColor: pal.glass, borderRadius: 4 }}>
+                {[
+                  ['DURUM', STATUS_TEXT[gps.status].title],
+                  ['İZİN / SERVİS', gps.baseStatus.toUpperCase()],
+                  ['DOĞRULUK', gps.accuracy == null ? 'YOK' : `±${Math.round(gps.accuracy)} M`],
+                  ['CİHAZ HIZI', gps.rawSpeed == null ? 'GÖNDERİLMİYOR' : `${(gps.rawSpeed * 3.6).toFixed(1)} KM/H`],
+                  ['SON VERİ', gps.lastFixAt == null ? 'HİÇ GELMEDİ' : `${Math.max(0, Math.round((gps.now - gps.lastFixAt) / 1000))} SN ÖNCE`],
+                  ...(Platform.OS === 'web'
+                    ? [
+                        ['GÜVENLİ BAĞLANTI', typeof window !== 'undefined' && window.isSecureContext ? 'EVET' : 'HAYIR'],
+                        ['TARAYICI', typeof navigator !== 'undefined' ? navigator.userAgent.replace(/^Mozilla\/5\.0 /, '').slice(0, 70) : '-'],
+                      ]
+                    : []),
+                ].map(([k, v]) => (
+                  <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
+                    <NxLabel color={pal.dim} size={8.5} spacing={1}>
+                      {k}
+                    </NxLabel>
+                    <NxLabel color={pal.text} size={8.5} spacing={0.5} numberOfLines={2} style={{ flex: 1, textAlign: 'right', textTransform: 'none' }}>
+                      {v}
+                    </NxLabel>
+                  </View>
+                ))}
+              </View>
+              <HudButton icon="crosshairs-gps" label="GPS'İ YENİDEN BAŞLAT" pal={pal} onPress={gps.retry} />
+            </Section>
+          ) : null}
 
           <View style={{ marginTop: 22 }}>
             <HudButton

@@ -36,7 +36,7 @@ export interface GaugeProps {
 }
 
 /** Göstergenin yükseklik/genişlik oranı */
-export const GAUGE_ASPECT: Record<GaugeKind, number> = { blade: 0.78, orbit: 0.92, warp: 0.66, streak: 0.8, nova: 0.8, tunnel: 0.78, road: 0.66 };
+export const GAUGE_ASPECT: Record<GaugeKind, number> = { blade: 0.78, orbit: 0.92, warp: 0.66, streak: 0.8, nova: 0.8, road: 0.66 };
 
 const D2R = Math.PI / 180;
 const pt = (cx: number, cy: number, r: number, deg: number) => [cx + r * Math.cos(deg * D2R), cy + r * Math.sin(deg * D2R)] as const;
@@ -199,7 +199,7 @@ const BladeGauge = memo(function BladeGauge({ speed, max, width, pal, glyph, uni
         <Path d="M6 47 L10.5 44 L10.5 50 Z M94 47 L89.5 44 L89.5 50 Z" fill={alpha(pal.holo, 0.8)} />
       </Svg>
       <CenterBox top={h * 0.1} height={h * 0.62}>
-        {center ?? <Readout value={shown} height={h * 0.34} pal={pal} glyph={glyph} unit={unit} over={over} />}
+        {center ?? <Readout value={shown} height={h * 0.4} pal={pal} glyph={glyph} unit={unit} over={over} />}
       </CenterBox>
     </View>
   );
@@ -228,7 +228,7 @@ const OrbitGauge = memo(function OrbitGauge({ speed, max, width, pal, glyph, uni
   const h = width * GAUGE_ASPECT.orbit;
   const shown = useTweenedSpeed(speed, reduced);
   const f = useFraction(speed, max, reduced);
-  const spin = useLoop(speed == null ? 0 : speed, reduced, 24000, 5000);
+  const spin = useLoop(speed == null ? 0 : speed, reduced, 30000, 9000);
   const arcProps = useAnimatedProps(() => ({ strokeDashoffset: ORB_LEN * (1 - f.value) }));
   const dotProps = useAnimatedProps(() => {
     const a = (ORB_A0 + ORB_SPAN * f.value) * (Math.PI / 180);
@@ -255,7 +255,7 @@ const OrbitGauge = memo(function OrbitGauge({ speed, max, width, pal, glyph, uni
         <ACircle r={1.5} fill={pal.text} animatedProps={dotProps} />
       </Svg>
       <CenterBox top={0} height={h}>
-        {center ?? <Readout value={shown} height={h * 0.3} pal={pal} glyph={glyph} unit={unit} over={over} />}
+        {center ?? <Readout value={shown} height={h * 0.34} pal={pal} glyph={glyph} unit={unit} over={over} />}
       </CenterBox>
     </View>
   );
@@ -277,7 +277,7 @@ const WarpGauge = memo(function WarpGauge({ speed, max, width, pal, glyph, unit,
   const h = width * GAUGE_ASPECT.warp;
   const shown = useTweenedSpeed(speed, reduced);
   const f = useFraction(speed, max, reduced);
-  const flow = useLoop(speed == null ? 0 : speed, reduced, 4000, 380);
+  const flow = useLoop(speed == null ? 0 : speed, reduced, 6000, 1100);
   const streakProps = useAnimatedProps(() => ({ strokeDashoffset: flow.value * WARP_PERIOD }));
   const barProps = useAnimatedProps(() => {
     const w = 70 * f.value;
@@ -296,7 +296,7 @@ const WarpGauge = memo(function WarpGauge({ speed, max, width, pal, glyph, unit,
         <Path d="M10 57 L5 57 L2 62 M90 57 L95 57 L98 62" stroke={pal.holo} strokeWidth={0.6} fill="none" />
       </Svg>
       <CenterBox top={h * 0.24} height={h * 0.6}>
-        {center ?? <Readout value={shown} height={h * 0.38} pal={pal} glyph={glyph} unit={unit} over={over} unitGap={0.04} />}
+        {center ?? <Readout value={shown} height={h * 0.44} pal={pal} glyph={glyph} unit={unit} over={over} unitGap={0.04} />}
       </CenterBox>
     </View>
   );
@@ -327,7 +327,7 @@ const StreakGauge = memo(function StreakGauge({ speed, max, width, pal, glyph, u
   const h = width * GAUGE_ASPECT.streak;
   const shown = useTweenedSpeed(speed, reduced);
   const f = useFraction(speed, max, reduced);
-  const flow = useLoop(speed == null ? 0 : speed, reduced, 4500, 320);
+  const flow = useLoop(speed == null ? 0 : speed, reduced, 7000, 1300);
   const streakProps = useAnimatedProps(() => ({ strokeDashoffset: -flow.value * STREAK_PERIOD }));
   const arcProps = useAnimatedProps(() => ({ strokeDashoffset: LS_LEN * (1 - f.value) }));
   const glowProps = useAnimatedProps(() => ({ strokeDashoffset: LS_LEN * (1 - f.value) }));
@@ -344,85 +344,14 @@ const StreakGauge = memo(function StreakGauge({ speed, max, width, pal, glyph, u
         <Circle cx={50} cy={40} r={37.5} stroke={alpha(pal.holo, 0.35)} strokeWidth={0.3} fill="none" strokeDasharray="0.6 2.2" />
       </Svg>
       <CenterBox top={h * 0.1} height={h * 0.8}>
-        {center ?? <Readout value={shown} height={h * 0.27} pal={pal} glyph={glyph} unit={unit} over={over} />}
+        {center ?? <Readout value={shown} height={h * 0.32} pal={pal} glyph={glyph} unit={unit} over={over} />}
       </CenterBox>
     </View>
   );
 });
 
 // ---------------------------------------------------------------------------
-// 5) Tachyon — Dairesel ışık tüneli
-// ---------------------------------------------------------------------------
-const TUNNEL_N = 7;
-const TUNNEL_SEGS = 20;
-const TUNNEL_SPOKES = Array.from({ length: 16 }, (_, i) => {
-  const a = (i * 360) / 16;
-  const p0 = pt(50, 35, 6, a);
-  const p1 = pt(50, 35, 70, a);
-  return `M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}L${p1[0].toFixed(2)} ${p1[1].toFixed(2)}`;
-}).join('');
-
-/** Tek tünel halkası: uzaktan (küçük, soluk) yakına (büyük) akar ve kaybolur */
-function TunnelRing({ i, t, w, h, color }: { i: number; t: SharedValue<number>; w: number; h: number; color: string }) {
-  const style = useAnimatedStyle(() => {
-    const q = (t.value + i / TUNNEL_N) % 1;
-    const scale = 0.06 + q * q * q * 1.6;
-    const op = q < 0.12 ? q / 0.12 : q > 0.8 ? Math.max(0, (1 - q) / 0.2) : 1;
-    return { transform: [{ scale }, { rotate: `${q * 40 * (i % 2 ? 1 : -1)}deg` }], opacity: op };
-  });
-  return (
-    <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, top: 0, width: w, height: h }, style]}>
-      <Svg width={w} height={h} viewBox="0 0 100 70">
-        <Ellipse cx={50} cy={35} rx={44} ry={33} stroke={color} strokeWidth={1.3} fill="none" strokeDasharray={i % 2 ? '7 3' : '18 4 2 4'} />
-      </Svg>
-    </Animated.View>
-  );
-}
-
-const TunnelGauge = memo(function TunnelGauge({ speed, max, width, pal, glyph, unit, over, reduced, center }: GaugeProps) {
-  const h = width * GAUGE_ASPECT.tunnel;
-  const shown = useTweenedSpeed(speed, reduced);
-  const t = useLoop(speed == null ? 0 : speed, reduced, 6000, 520);
-  const lit = shown == null ? 0 : Math.round(Math.min(1, shown / max) * TUNNEL_SEGS);
-  const ringH = h * 0.86;
-  const col = over ? pal.danger : pal.primary;
-  return (
-    <View style={{ width, height: h, overflow: 'hidden' }}>
-      <View style={{ position: 'absolute', left: 0, top: 0, width, height: ringH, overflow: 'hidden' }}>
-        <Svg width={width} height={ringH} viewBox="0 0 100 70" style={{ position: 'absolute' }}>
-          <Path d={TUNNEL_SPOKES} stroke={alpha(pal.holo, 0.22)} strokeWidth={0.3} />
-          <Circle cx={50} cy={35} r={5} fill={alpha(pal.primary, 0.35)} />
-        </Svg>
-        {Array.from({ length: TUNNEL_N }, (_, i) => (
-          <TunnelRing key={i} i={i} t={t} w={width} h={ringH} color={i % 2 ? pal.secondary : pal.primary} />
-        ))}
-      </View>
-      {/* segment hız ölçeği */}
-      <View style={{ position: 'absolute', left: width * 0.12, right: width * 0.12, bottom: h * 0.02, height: h * 0.06, flexDirection: 'row', gap: 3 }}>
-        {Array.from({ length: TUNNEL_SEGS }, (_, i) => (
-          <View
-            key={i}
-            style={{
-              flex: 1,
-              backgroundColor: i < lit ? (over ? pal.danger : i / TUNNEL_SEGS > 0.7 ? pal.secondary : col) : alpha(pal.primary, 0.12),
-              transform: [{ skewX: '-20deg' }],
-            }}
-          />
-        ))}
-      </View>
-      <CenterBox top={0} height={ringH}>
-        {center ?? (
-          <View style={{ backgroundColor: alpha(pal.bg, 0.72), paddingHorizontal: width * 0.04, paddingVertical: h * 0.02, borderRadius: h * 0.06 }}>
-            <Readout value={shown} height={h * 0.3} pal={pal} glyph={glyph} unit={unit} over={over} />
-          </View>
-        )}
-      </CenterBox>
-    </View>
-  );
-});
-
-// ---------------------------------------------------------------------------
-// 7) Nova Drive — Spiral yıldız akışı
+// 5) Nova Drive — Spiral yıldız akışı
 // ---------------------------------------------------------------------------
 const NOVA_D = Array.from({ length: 40 }, (_, i) => {
   const a = (i * 360) / 40;
@@ -453,8 +382,9 @@ const NovaGauge = memo(function NovaGauge({ speed, max, width, pal, glyph, unit,
   const h = width * GAUGE_ASPECT.nova;
   const shown = useTweenedSpeed(speed, reduced);
   const f = useFraction(speed, max, reduced);
-  const flow = useLoop(speed == null ? 0 : speed, reduced, 4200, 300);
-  const spin = useLoop(speed == null ? 0 : speed, reduced, 40000, 7000);
+  // Nova: illüzyon hıza bağlı değil; sabit ve çok yavaş akar
+  const flow = useLoop(0, reduced, 9000, 9000);
+  const spin = useLoop(0, reduced, 70000, 70000);
   const streakProps = useAnimatedProps(() => ({ strokeDashoffset: -flow.value * NOVA_PERIOD }));
   const spinStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
   const lProps = useAnimatedProps(() => ({ strokeDashoffset: BR_LEN * (1 - f.value) }));
@@ -477,7 +407,7 @@ const NovaGauge = memo(function NovaGauge({ speed, max, width, pal, glyph, unit,
         <Path d="M50 9 L50 13 M50 67 L50 71" stroke={pal.holo} strokeWidth={0.8} />
       </Svg>
       <CenterBox top={0} height={h}>
-        {center ?? <Readout value={shown} height={h * 0.3} pal={pal} glyph={glyph} unit={unit} over={over} />}
+        {center ?? <Readout value={shown} height={h * 0.34} pal={pal} glyph={glyph} unit={unit} over={over} />}
       </CenterBox>
     </View>
   );
@@ -499,7 +429,7 @@ const RoadGauge = memo(function RoadGauge({ speed, max, width, pal, glyph, unit,
   const h = width * GAUGE_ASPECT.road;
   const shown = useTweenedSpeed(speed, reduced);
   const f = useFraction(speed, max, reduced);
-  const flow = useLoop(speed == null ? 0 : speed, reduced, 4000, 330);
+  const flow = useLoop(speed == null ? 0 : speed, reduced, 6500, 1200);
   const gridProps = useAnimatedProps(() => {
     let d = '';
     for (let k = 0; k < 7; k++) {
@@ -524,8 +454,8 @@ const RoadGauge = memo(function RoadGauge({ speed, max, width, pal, glyph, unit,
         <APath d={EDGE_L} stroke={col} strokeWidth={1.6} strokeDasharray={`${EDGE_LEN} ${EDGE_LEN}`} animatedProps={edgeProps} />
         <APath d={EDGE_R} stroke={col} strokeWidth={1.6} strokeDasharray={`${EDGE_LEN} ${EDGE_LEN}`} animatedProps={edgeProps2} />
       </Svg>
-      <CenterBox top={0} height={h * 0.62}>
-        {center ?? <Readout value={shown} height={h * 0.34} pal={pal} glyph={glyph} unit={unit} over={over} unitGap={0.04} />}
+      <CenterBox top={0} height={h * 0.8}>
+        {center ?? <Readout value={shown} height={h * 0.5} pal={pal} glyph={glyph} unit={unit} over={over} unitGap={0.04} />}
       </CenterBox>
     </View>
   );
@@ -539,8 +469,6 @@ export function Gauge({ kind, ...p }: GaugeProps & { kind: GaugeKind }) {
       return <WarpGauge {...p} />;
     case 'streak':
       return <StreakGauge {...p} />;
-    case 'tunnel':
-      return <TunnelGauge {...p} />;
     case 'nova':
       return <NovaGauge {...p} />;
     case 'road':

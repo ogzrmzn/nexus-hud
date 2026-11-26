@@ -21,6 +21,8 @@ export type GpsStatus =
 export const LOST_AFTER_MS = 6000;
 /** Bundan kötü doğrulukta hız gösterilmez */
 export const MAX_SPEED_ACCURACY_M = 50;
+/** Cihaz hızı kendisi ölçüyorsa (Doppler) konum doğruluğu bundan kötü olmadıkça hız gösterilir */
+export const MAX_DEVICE_SPEED_ACCURACY_M = 100;
 
 export interface ConfirmedMax {
   prev: number;
@@ -35,11 +37,11 @@ export function confirmMax(s: ConfirmedMax, shown: number): ConfirmedMax {
 }
 
 /** Durum + son konum zamanı + doğruluk → gösterilecek durum (saf; test edilebilir) */
-export function deriveStatus(base: GpsStatus, lastFixAt: number | null, accuracy: number | null, now: number): GpsStatus {
+export function deriveStatus(base: GpsStatus, lastFixAt: number | null, accuracy: number | null, now: number, deviceSpeed = false): GpsStatus {
   if (base !== 'bagli') return base;
   if (lastFixAt == null) return 'araniyor';
   if (now - lastFixAt > LOST_AFTER_MS) return 'kayip';
-  if (accuracy != null && accuracy > MAX_SPEED_ACCURACY_M) return 'zayif';
+  if (accuracy != null && accuracy > (deviceSpeed ? MAX_DEVICE_SPEED_ACCURACY_M : MAX_SPEED_ACCURACY_M)) return 'zayif';
   return 'bagli';
 }
 
@@ -59,6 +61,10 @@ export interface NexusGps {
   maxKmh: number;
   accuracy: number | null;
   lastFixAt: number | null;
+  /** Cihazın bildirdiği ham hız (m/s); tanı için */
+  rawSpeed: number | null;
+  /** Ham durum (izin/servis); tanı için */
+  baseStatus: GpsStatus;
   /** Yön (derece); hareket halinde GPS rotası, dururken pusula */
   heading: number | null;
   now: number;
@@ -70,7 +76,7 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
   const [base, setBase] = useState<GpsStatus>(demo ? 'demo' : 'izin');
   const [state, setState] = useState<{ trip: Trip; cmax: ConfirmedMax }>(() => ({ trip: newTrip(Date.now()), cmax: { prev: 0, max: 0 } }));
   const { trip, cmax } = state;
-  const [fix, setFix] = useState<{ at: number | null; accuracy: number | null }>({ at: null, accuracy: null });
+  const [fix, setFix] = useState<{ at: number | null; accuracy: number | null; rawSpeed: number | null }>({ at: null, accuracy: null, rawSpeed: null });
   const [compassDeg, setCompassDeg] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [attempt, setAttempt] = useState(0);
@@ -82,7 +88,7 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
       const next = addPoint(s.trip, p);
       return { trip: next, cmax: confirmMax(s.cmax, next.speedKmh) };
     });
-    setFix({ at: Date.now(), accuracy: p.accuracy });
+    setFix({ at: Date.now(), accuracy: p.accuracy, rawSpeed: p.speed != null && p.speed >= 0 ? p.speed : null });
   }, []);
 
   // Uygulama arka plandayken GPS'i bırak (pil)
@@ -214,7 +220,7 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
     };
   }, [compass, demo, active, base]);
 
-  const status = deriveStatus(base, fix.at, fix.accuracy, now);
+  const status = deriveStatus(base, fix.at, fix.accuracy, now, fix.rawSpeed != null);
   const reliable = status === 'bagli' || status === 'demo';
   const moving = trip.speedKmh >= 5;
   const heading = moving && trip.heading != null ? trip.heading : (compassDeg ?? trip.heading);
@@ -238,6 +244,8 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
     maxKmh: cmax.max,
     accuracy: fix.accuracy,
     lastFixAt: fix.at,
+    rawSpeed: fix.rawSpeed,
+    baseStatus: base,
     heading,
     now,
     retry,

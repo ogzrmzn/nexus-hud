@@ -7,12 +7,12 @@ import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, w
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Line } from 'react-native-svg';
 import { GAUGE_ASPECT, Gauge } from '@/components/nexus/Gauges';
-import { CompassDial, GpsScan, HeadingTape, SignalAlert, SignalIndicator } from '@/components/nexus/Instruments';
+import { CompassDial, GpsScan, SignalAlert, SignalIndicator } from '@/components/nexus/Instruments';
 import { NxNumber } from '@/components/nexus/NxNumber';
 import { HudDrawer } from '@/components/nexus/HudDrawer';
-import { DataCell, HudButton, NxIcon, NxLabel, Panel } from '@/components/nexus/primitives';
+import { DataCell, HudButton, NxIcon, NxLabel } from '@/components/nexus/primitives';
 import { avgKmh } from '@/features/nexus/trip';
-import { clockDuration, clockText, distanceText, distUnitLabel, gaugeMax, headingLabel, toUnit, unitLabel } from '@/features/nexus/format';
+import { clockDuration, clockText, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
 import { alpha, type NexusPalette } from '@/features/nexus/themes';
 import { useHudSystem } from '@/features/nexus/useHudSystem';
 import { useNexus } from '@/features/nexus/useNexus';
@@ -67,7 +67,6 @@ export default function Cockpit() {
   const [drawer, setDrawer] = useState(false);
 
   const landscape = width > height;
-  const contentW = width - insets.left - insets.right - 32;
   const unitL = unitLabel(nx.unit);
   const speed = gps.speedKmh == null ? null : toUnit(gps.speedKmh, nx.unit);
   const over = nx.speedAlert > 0 && speed != null && Math.round(speed) > nx.speedAlert;
@@ -124,177 +123,38 @@ export default function Cockpit() {
     return <Gauge kind={theme.gauge} speed={speed} max={gaugeMax(nx.unit)} width={gw} pal={pal} glyph={theme.glyph} unit={unitL} over={over} reduced={reduced} center={centerFor(gw)} />;
   };
 
-  const tape = (tw: number) => (w.compass ? <HeadingTape heading={gps.heading} width={tw} pal={pal} reduced={reduced} /> : null);
   const dial = (size: number) => (w.compass ? <CompassDial heading={gps.heading} size={size} pal={pal} glyph={theme.glyph} reduced={reduced} /> : null);
 
   // ----- Tema yerleşimleri -----
-  let body: ReactNode;
-  switch (theme.layout) {
-    case 'grid': {
-      // Cyber Core: çekirdek + terminal ızgarası
-      const grid = (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {cells.map((c) => (
-            <Panel key={c.k} pal={pal} chamfer={0} style={{ flexBasis: '47%', flexGrow: 1, padding: 10 }}>
-              {cell(c)}
-            </Panel>
-          ))}
-          {w.compass ? (
-            <Panel pal={pal} chamfer={0} style={{ flexBasis: '100%', padding: 8, alignItems: 'center' }}>
-              {dial(Math.min(120, cellSize * 4))}
-            </Panel>
-          ) : null}
-        </View>
-      );
-      body = landscape ? (
-        <View style={{ flex: 1, flexDirection: 'row', gap: 16 }}>
-          <Fit>{gauge}</Fit>
-          <View style={{ width: '38%', justifyContent: 'center' }}>{grid}</View>
-        </View>
-      ) : (
-        <View style={{ flex: 1, gap: 12 }}>
-          <Fit>{gauge}</Fit>
-          {grid}
-        </View>
-      );
-      break;
-    }
-    case 'columns': {
-      // Quantum: simetrik iki sütun, ortada yörünge
-      const half = Math.ceil(cells.length / 2);
-      const left = cells.slice(0, half);
-      const right = cells.slice(half);
-      const col = (list: typeof cells, align: 'flex-start' | 'flex-end') => (
-        <View style={{ justifyContent: 'center', gap: 22, alignItems: align, minWidth: 90 }}>{list.map((c) => cell(c, cellSize, align))}</View>
-      );
-      body = landscape ? (
-        <View style={{ flex: 1, flexDirection: 'row', gap: 12 }}>
-          {col(left, 'flex-start')}
-          <View style={{ flex: 1 }}>
-            <Fit>{gauge}</Fit>
-          </View>
-          <View style={{ justifyContent: 'center', alignItems: 'flex-end', gap: 22 }}>
-            {right.map((c) => cell(c, cellSize, 'flex-end'))}
-            {dial(Math.min(96, height * 0.24))}
-          </View>
-        </View>
-      ) : (
-        <View style={{ flex: 1, gap: 14 }}>
-          <Fit>{gauge}</Fit>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            {col(left, 'flex-start')}
-            {dial(Math.min(110, width * 0.27))}
-            {col(right, 'flex-end')}
-          </View>
-        </View>
-      );
-      break;
-    }
-    case 'strip': {
-      // Dark Matter: neredeyse boş ekran, tek satır veri
-      const items = [...cells];
-      body = (
-        <View style={{ flex: 1, gap: 14 }}>
-          <Fit>{gauge}</Fit>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around', flexWrap: 'wrap', rowGap: 12, borderTopWidth: 1, borderColor: alpha(pal.dim, 0.6), paddingTop: 12 }}>
-            {items.map((c) => cell(c, cellSize * 0.8, 'center'))}
-            {w.compass ? (
-              <DataCell
-                label="YÖN"
-                value={gps.heading == null ? '---' : String(Math.round(gps.heading) % 360).padStart(3, '0')}
-                unit={headingLabel(gps.heading)}
-                pal={pal}
-                glyph="mono"
-                size={cellSize * 0.8}
-                align="center"
-                icon="compass-outline"
-              />
-            ) : null}
-          </View>
-        </View>
-      );
-      break;
-    }
-    case 'band': {
-      // Hyperdrive / Neon Highway: hız ortada ve büyük; süre + mesafe solda, ortalama + maksimum sağda
-      const pick = (keys: string[]) => cells.filter((c) => keys.includes(c.k));
-      const left = pick(['sure', 'mesafe']);
-      const right = pick(['ort', 'maks']);
-      const side = (list: typeof cells, align: 'flex-start' | 'flex-end') => (
-        <View style={{ justifyContent: 'center', gap: 22, alignItems: align, paddingHorizontal: 4 }}>
-          {list.map((c) => (
-            <View key={c.k} style={{ alignItems: align }}>
-              {cell(c, cellSize, align)}
-              <View style={{ marginTop: 6, width: 70, height: 2, backgroundColor: alpha(pal.holo, 0.7), transform: [{ skewX: '-30deg' }] }} />
-            </View>
-          ))}
-        </View>
-      );
-      const heading = w.compass ? (
-        <DataCell
-          label="YÖN"
-          value={gps.heading == null ? '---' : String(Math.round(gps.heading) % 360).padStart(3, '0')}
-          unit={headingLabel(gps.heading)}
-          pal={pal}
-          glyph="mono"
-          size={cellSize * 0.8}
-          align="flex-end"
-          icon="compass-outline"
-        />
-      ) : null;
-      body = landscape ? (
-        <View style={{ flex: 1, flexDirection: 'row', gap: 10 }}>
-          {side(left, 'flex-start')}
-          <View style={{ flex: 1 }}>
-            <Fit>{gauge}</Fit>
-          </View>
-          <View style={{ justifyContent: 'center', gap: 22 }}>
-            {side(right, 'flex-end')}
-            {heading}
-          </View>
-        </View>
-      ) : (
-        <View style={{ flex: 1, gap: 12 }}>
-          <Fit>{gauge}</Fit>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            {side(left, 'flex-start')}
-            <View style={{ gap: 22, alignItems: 'flex-end' }}>
-              {side(right, 'flex-end')}
-              {heading}
-            </View>
-          </View>
-        </View>
-      );
-      break;
-    }
-    default: {
-      // NEXUS Original: üstte yön şeridi, yanda veri rayı
-      const rail = (vertical: boolean) => (
-        <View style={vertical ? { justifyContent: 'center', gap: 16 } : { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-          {cells.map((c) => (
-            <Panel key={c.k} pal={pal} chamfer={theme.chamfer} accent={pal.primary} style={vertical ? { paddingVertical: 10, paddingHorizontal: 14 } : { flexBasis: '47%', flexGrow: 1, padding: 12 }}>
-              {cell(c)}
-            </Panel>
-          ))}
-        </View>
-      );
-      body = landscape ? (
-        <View style={{ flex: 1, flexDirection: 'row', gap: 18 }}>
-          <View style={{ flex: 1 }}>
-            <View style={{ alignItems: 'center' }}>{tape(Math.min(contentW * 0.6, 460))}</View>
-            <Fit>{gauge}</Fit>
-          </View>
-          <View style={{ width: '27%', justifyContent: 'center' }}>{rail(true)}</View>
-        </View>
-      ) : (
-        <View style={{ flex: 1, gap: 10 }}>
-          <View style={{ alignItems: 'center' }}>{tape(contentW)}</View>
-          <Fit>{gauge}</Fit>
-          {rail(false)}
-        </View>
-      );
-    }
-  }
+  // Tüm temalarda aynı düzen (Quantum yerleşimi): hız ortada ve olabildiğince büyük,
+  // süre + mesafe solda, ortalama + maksimum hız ve pusula sağda
+  const pick = (keys: string[]) => cells.filter((c) => keys.includes(c.k));
+  const left = pick(['sure', 'mesafe']);
+  const right = pick(['ort', 'maks']);
+  const col = (list: typeof cells, align: 'flex-start' | 'flex-end') => (
+    <View style={{ justifyContent: 'center', gap: 22, alignItems: align, minWidth: 90 }}>{list.map((c) => cell(c, cellSize, align))}</View>
+  );
+  const body: ReactNode = landscape ? (
+    <View style={{ flex: 1, flexDirection: 'row', gap: 12 }}>
+      {col(left, 'flex-start')}
+      <View style={{ flex: 1 }}>
+        <Fit>{gauge}</Fit>
+      </View>
+      <View style={{ justifyContent: 'center', alignItems: 'flex-end', gap: 22 }}>
+        {right.map((c) => cell(c, cellSize, 'flex-end'))}
+        {dial(Math.min(96, height * 0.24))}
+      </View>
+    </View>
+  ) : (
+    <View style={{ flex: 1, gap: 14 }}>
+      <Fit>{gauge}</Fit>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        {col(left, 'flex-start')}
+        {dial(Math.min(110, width * 0.27))}
+        {col(right, 'flex-end')}
+      </View>
+    </View>
+  );
 
   const alert =
     gps.status === 'kayip' || gps.status === 'zayif' ? (
@@ -339,7 +199,7 @@ export default function Cockpit() {
           </NxLabel>
         </View>
       </Animated.View>
-      <HudDrawer mode="kokpit" open={drawer} onClose={() => setDrawer(false)} />
+      <HudDrawer mode="kokpit" open={drawer} onClose={() => setDrawer(false)} gps={gps} />
     </View>
   );
 }

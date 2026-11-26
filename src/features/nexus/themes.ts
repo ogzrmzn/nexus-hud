@@ -12,7 +12,6 @@ export type GaugeKind =
   | 'warp' // Warp: ufka daralan perspektif şeritler
   | 'streak' // Lightspeed: merkezden dışa akan yıldız çizgileri + açılan ışık yayı
   | 'nova' // Nova Drive: dönen spiral yıldız akışı + iki yanda açılan ışık parantezleri
-  | 'tunnel' // Tachyon: size doğru akan dairesel tünel halkaları
   | 'road'; // Neon Highway: perspektifli yol ızgarası, akan şerit çizgileri
 
 /** Kokpit veri yerleşimi */
@@ -59,7 +58,7 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
   nexus: {
     id: 'nexus',
     name: 'NEXUS Original',
-    tagline: 'Prizma bıçak · üst yön şeridi · yan veri rayı',
+    tagline: 'Prizma bıçak · holografik köprü · dengeli ve sade',
     gauge: 'blade',
     layout: 'rail',
     glyph: 'prism',
@@ -70,7 +69,7 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
   quantum: {
     id: 'quantum',
     name: 'Quantum',
-    tagline: 'Yörünge yayı · parçacık · simetrik sütunlar',
+    tagline: 'Yörünge yayı · üzerinde kayan parçacık · ince rakam',
     gauge: 'orbit',
     layout: 'columns',
     glyph: 'hairline',
@@ -81,7 +80,7 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
   hyperdrive: {
     id: 'hyperdrive',
     name: 'Hyperdrive',
-    tagline: 'Warp şeritleri · eğik rakam · üst HUD bandı',
+    tagline: 'Warp şeritleri · eğik rakam · eğik hız bandı',
     gauge: 'warp',
     layout: 'band',
     glyph: 'italic',
@@ -92,7 +91,7 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
   lightspeed: {
     id: 'lightspeed',
     name: 'Lightspeed',
-    tagline: 'Yıldız akışı · açılan ışık yayı · terminal ızgarası',
+    tagline: 'Yıldız akışı · hızla açılan ışık yayı',
     gauge: 'streak',
     layout: 'grid',
     glyph: 'mono',
@@ -103,7 +102,7 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
   nova: {
     id: 'nova',
     name: 'Nova Drive',
-    tagline: 'Spiral yıldız akışı · iki yanda ışık parantezi · yan veri rayı',
+    tagline: 'Sakin spiral yıldız akışı · iki yanda ışık parantezi',
     gauge: 'nova',
     layout: 'rail',
     glyph: 'prism',
@@ -111,21 +110,10 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
     night: { ...base, bg: '#03020D', text: '#FFFFFF', primary: '#B48CFF', secondary: '#7FE8FF', holo: '#FF7AD9', dim: '#4E4472', glass: 'rgba(180,140,255,0.07)' },
     day: { ...base, bg: '#0A071C', text: '#FFFFFF', primary: '#CDB2FF', secondary: '#A6F0FF', holo: '#FF9DE4', dim: '#8C82B4', glass: 'rgba(205,178,255,0.12)' },
   },
-  tachyon: {
-    id: 'tachyon',
-    name: 'Tachyon',
-    tagline: 'Dairesel ışık tüneli · segment rakam · tek satır veri',
-    gauge: 'tunnel',
-    layout: 'strip',
-    glyph: 'segment',
-    chamfer: 2,
-    night: { ...base, bg: '#05020C', text: '#EAFDFF', primary: '#00E5FF', secondary: '#FF5BE1', holo: '#A24BFF', dim: '#4D3F6A', glass: 'rgba(0,229,255,0.06)' },
-    day: { ...base, bg: '#0B061A', text: '#FFFFFF', primary: '#4DF0FF', secondary: '#FF8AEA', holo: '#BE7DFF', dim: '#887AA8', glass: 'rgba(77,240,255,0.11)' },
-  },
   neon: {
     id: 'neon',
     name: 'Neon Highway',
-    tagline: 'Neon yol ızgarası · akan şeritler · üst HUD bandı',
+    tagline: 'Neon yol ızgarası · akan şeritler · büyük eğik rakam',
     gauge: 'road',
     layout: 'band',
     glyph: 'italic',
