@@ -427,7 +427,7 @@ const NovaGauge = memo(function NovaGauge({ speed, max, width, pal, glyph, unit,
 // ---------------------------------------------------------------------------
 const SP_C = 45;
 const SP_R = 34;
-const SP_PARALLELS = [-60, -35, -12, 12, 35, 60]
+const SP_PARALLELS = [-30, 30]
   .map((lat) => {
     const y = SP_C + SP_R * Math.sin(lat * D2R);
     const rx = SP_R * Math.cos(lat * D2R);
@@ -445,12 +445,12 @@ const SphereGauge = memo(function SphereGauge({ speed, max, width, pal, glyph, u
   const h = width * GAUGE_ASPECT.sphere;
   const shown = useTweenedSpeed(speed, reduced);
   const f = useFraction(speed, max, reduced);
-  const spin = useLoop(speed == null ? 0 : speed, reduced, 24000, 6000);
-  const scan = useLoop(0, reduced, 7000, 7000);
+  // Sakin dönüş: dururken ~60 sn'de, hızlıyken ~25 sn'de bir tur
+  const spin = useLoop(speed == null ? 0 : speed, reduced, 60000, 25000);
   const meridians = useAnimatedProps(() => {
     let d = '';
-    for (let i = 0; i < 8; i++) {
-      const a = spin.value * Math.PI * 2 + (i * Math.PI) / 8;
+    for (let i = 0; i < 4; i++) {
+      const a = spin.value * Math.PI * 2 + (i * Math.PI) / 4;
       const rx = Math.abs(Math.cos(a)) * SP_R;
       if (rx < 0.3) {
         d += `M50 ${SP_C - SP_R}L50 ${SP_C + SP_R}`;
@@ -459,14 +459,6 @@ const SphereGauge = memo(function SphereGauge({ speed, max, width, pal, glyph, u
       d += `M50 ${SP_C - SP_R}A${rx.toFixed(2)} ${SP_R} 0 0 1 50 ${SP_C + SP_R}A${rx.toFixed(2)} ${SP_R} 0 0 1 50 ${SP_C - SP_R}`;
     }
     return { d };
-  });
-  const scanProps = useAnimatedProps(() => {
-    // tarama bandı kürenin üstünden altına iner, sonra geri çıkar
-    const t = scan.value < 0.5 ? scan.value * 2 : (1 - scan.value) * 2;
-    const lat = (-70 + 140 * t) * (Math.PI / 180);
-    const y = SP_C + SP_R * Math.sin(lat);
-    const rx = SP_R * Math.cos(lat);
-    return { d: `M${(50 - rx).toFixed(2)} ${y.toFixed(2)}L${(50 + rx).toFixed(2)} ${y.toFixed(2)}` };
   });
   const ringProps = useAnimatedProps(() => ({ strokeDashoffset: RING_LEN * (1 - f.value) }));
   const dotProps = useAnimatedProps(() => {
@@ -478,14 +470,13 @@ const SphereGauge = memo(function SphereGauge({ speed, max, width, pal, glyph, u
   return (
     <View style={{ width, height: h, overflow: 'hidden' }}>
       <Svg width={width} height={h} viewBox="0 0 100 90">
-        <Circle cx={50} cy={SP_C} r={SP_R + 4} fill={alpha(pal.primary, 0.05)} />
-        <Circle cx={50} cy={SP_C} r={SP_R} stroke={alpha(pal.primary, 0.75)} strokeWidth={0.6} fill={alpha(pal.bg, 0.4)} />
-        <Path d={SP_PARALLELS} stroke={alpha(pal.primary, 0.35)} strokeWidth={0.35} fill="none" />
-        <APath stroke={alpha(pal.primary, 0.5)} strokeWidth={0.4} fill="none" animatedProps={meridians} />
-        <APath stroke={pal.secondary} strokeWidth={0.9} strokeLinecap="round" animatedProps={scanProps} />
-        <Path d={RING_D} stroke={alpha(pal.holo, 0.25)} strokeWidth={1.6} fill="none" />
+        {/* Sade, yarı saydam küre: tüm parçalar temanın ana renginde */}
+        <Circle cx={50} cy={SP_C} r={SP_R} stroke={alpha(pal.primary, 0.4)} strokeWidth={0.6} fill="none" />
+        <Path d={SP_PARALLELS} stroke={alpha(pal.primary, 0.18)} strokeWidth={0.4} fill="none" />
+        <APath stroke={alpha(pal.primary, 0.24)} strokeWidth={0.45} fill="none" animatedProps={meridians} />
+        <Path d={RING_D} stroke={alpha(pal.primary, 0.16)} strokeWidth={1.6} fill="none" />
         <APath d={RING_D} stroke={col} strokeWidth={1.6} fill="none" strokeLinecap="round" strokeDasharray={`${RING_LEN} ${RING_LEN}`} animatedProps={ringProps} />
-        <ACircle r={1.8} fill={pal.text} animatedProps={dotProps} />
+        <ACircle r={1.6} fill={col} animatedProps={dotProps} />
         <Circle cx={50} cy={SP_C} r={21} fill={alpha(pal.bg, 0.78)} />
       </Svg>
       <CenterBox top={0} height={h}>

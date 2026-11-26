@@ -125,7 +125,7 @@ export const THEMES: Record<NexusThemeId, NexusTheme> = {
   holo: {
     id: 'holo',
     name: 'Holosphere',
-    tagline: 'Dönen hologram küre · tarama bandı · dolan ekvator halkası',
+    tagline: 'Sakin dönen sade hologram küre · dolan ekvator halkası',
     gauge: 'sphere',
     layout: 'columns',
     glyph: 'prism',
