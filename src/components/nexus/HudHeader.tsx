@@ -1,12 +1,11 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
-import { clockText } from '@/features/nexus/format';
 import type { GlyphStyle, NexusPalette } from '@/features/nexus/themes';
 import type { NexusGps } from '@/features/nexus/useNexusGps';
 import type { NexusWeather } from '@/features/nexus/useNexusWeather';
 import { SignalIndicator } from './Instruments';
 import { HudButton, NxIcon, NxLabel } from './primitives';
-import { NxNumber } from './NxNumber';
+import { LiveClock } from './Live';
 
 /**
  * Tüm sürüş ekranlarında (Windshield dahil) aynı üst çubuk: geri, GPS sinyali, ortada saat,
@@ -38,7 +37,7 @@ export function HudHeader({
       <HudButton icon="arrow-left" pal={pal} size={36} onPress={() => router.back()} />
       {showGps ? <SignalIndicator status={gps.status} accuracy={gps.accuracy} pal={pal} /> : null}
       <View style={{ flex: 1, alignItems: 'center' }}>
-        {showClock ? <NxNumber text={clockText(new Date(gps.now))} height={clockHeight} color={pal.text} style={glyph} /> : null}
+        {showClock ? <LiveClock height={clockHeight} color={pal.text} glyph={glyph} /> : null}
       </View>
       {weather ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>

@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
+import { memo, useEffect, type ReactNode } from 'react';
 import { Platform, View } from 'react-native';
 import Animated, {
   Easing,
@@ -42,39 +42,11 @@ const D2R = Math.PI / 180;
 const pt = (cx: number, cy: number, r: number, deg: number) => [cx + r * Math.cos(deg * D2R), cy + r * Math.sin(deg * D2R)] as const;
 
 /**
- * Gösterilen sayının yumuşak geçişi: hedefe ~600 ms'de akar, yalnızca tam sayı değişince yeniden çizer.
- * (Sayı GPS ölçümleri arasında yeni değer uydurmaz; yalnızca iki gerçek ölçüm arasındaki geçişi yumuşatır.)
+ * Gösterilen hız: navigasyon uygulamalarındaki gibi yeni ölçüm gelince doğrudan değişir
+ * (25 → 30 arasında 26, 27, 28 diye saymaz).
  */
-export function useTweenedSpeed(target: number | null, reduced?: boolean): number | null {
-  const [shown, setShown] = useState<number | null>(target == null ? null : Math.round(target));
-  const cur = useRef(target ?? 0);
-  useEffect(() => {
-    if (target == null) {
-      setShown(null);
-      return;
-    }
-    const from = cur.current;
-    const to = target;
-    if (reduced || Math.abs(to - from) < 0.5) {
-      cur.current = to;
-      setShown(Math.round(to));
-      return;
-    }
-    const t0 = Date.now();
-    const dur = 600;
-    let raf = 0;
-    const step = () => {
-      const k = Math.min(1, (Date.now() - t0) / dur);
-      const e = 1 - (1 - k) ** 3;
-      cur.current = from + (to - from) * e;
-      const r = Math.round(cur.current);
-      setShown((s) => (s === r ? s : r));
-      if (k < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [target, reduced]);
-  return shown;
+export function useTweenedSpeed(target: number | null, _reduced?: boolean): number | null {
+  return target == null ? null : Math.round(target);
 }
 
 /** 0..1 hız oranı (UI thread'de yumuşak) */
@@ -104,9 +76,9 @@ function useLoop(speed: number | null, reduced: boolean | undefined, slowMs: num
     const target = 1 / slowMs + (1 / fastMs - 1 / slowMs) * k;
     rate.value = withTiming(target, { duration: 900, easing: Easing.inOut(Easing.quad) });
   }, [k, slowMs, fastMs, rate]);
-  // Web'de (telefon tarayıcısı) çizim ana iş parçacığında yapılır: ~30 fps ile sınırlanır ki hız güncellemeleri takılmasın
+  // Web'de (telefon tarayıcısı) çizim ana iş parçacığında yapılır: ~20 fps ile sınırlanır ki hız güncellemeleri takılmasın
   const acc = useSharedValue(0);
-  const minStep = Platform.OS === 'web' ? 33 : 0;
+  const minStep = Platform.OS === 'web' ? 50 : 0;
   const cb = useFrameCallback((f) => {
     const dt = Math.min(64, f.timeSincePreviousFrame ?? 16);
     acc.value += dt;

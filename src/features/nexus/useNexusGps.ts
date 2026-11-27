@@ -67,7 +67,6 @@ export interface NexusGps {
   baseStatus: GpsStatus;
   /** Yön (derece); hareket halinde GPS rotası, dururken pusula */
   heading: number | null;
-  now: number;
   retry: () => void;
   resetTrip: () => void;
 }
@@ -78,7 +77,9 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
   const { trip, cmax } = state;
   const [fix, setFix] = useState<{ at: number | null; accuracy: number | null; rawSpeed: number | null }>({ at: null, accuracy: null, rawSpeed: null });
   const [compassDeg, setCompassDeg] = useState<number | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  // Sinyal kaybı denetimi: yalnızca durum değişince yeniden çizim (her saniye değil)
+  const [stale, setStale] = useState(false);
+  const fixAtRef = useRef<number | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [active, setActive] = useState(AppState.currentState !== 'background');
   const canAskAgain = useRef(true);
@@ -88,7 +89,10 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
       const next = addPoint(s.trip, p);
       return { trip: next, cmax: confirmMax(s.cmax, next.speedKmh) };
     });
-    setFix({ at: Date.now(), accuracy: p.accuracy, rawSpeed: p.speed != null && p.speed >= 0 ? p.speed : null });
+    const at = Date.now();
+    fixAtRef.current = at;
+    setStale(false);
+    setFix({ at, accuracy: p.accuracy, rawSpeed: p.speed != null && p.speed >= 0 ? p.speed : null });
   }, []);
 
   // Uygulama arka plandayken GPS'i bırak (pil)
@@ -97,10 +101,13 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
     return () => sub.remove();
   }, []);
 
-  // Saat / kayıp denetimi
+  // Kayıp denetimi: değer aynıysa React yeniden çizmez
   useEffect(() => {
     if (!active) return;
-    const t = setInterval(() => setNow(Date.now()), tickMs);
+    const t = setInterval(() => {
+      const at = fixAtRef.current;
+      setStale(at != null && Date.now() - at > LOST_AFTER_MS);
+    }, tickMs);
     return () => clearInterval(t);
   }, [active, tickMs]);
 
@@ -220,7 +227,8 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
     };
   }, [compass, demo, active, base]);
 
-  const status = deriveStatus(base, fix.at, fix.accuracy, now, fix.rawSpeed != null);
+  const statusNow = fix.at == null ? 0 : stale ? fix.at + LOST_AFTER_MS + 1 : fix.at;
+  const status = deriveStatus(base, fix.at, fix.accuracy, statusNow, fix.rawSpeed != null);
   const reliable = status === 'bagli' || status === 'demo';
   const moving = trip.speedKmh >= 5;
   const heading = moving && trip.heading != null ? trip.heading : (compassDeg ?? trip.heading);
@@ -247,7 +255,6 @@ export function useNexusGps({ demo, compass, tickMs = 1000 }: { demo: boolean; c
     rawSpeed: fix.rawSpeed,
     baseStatus: base,
     heading,
-    now,
     retry,
     resetTrip,
   };

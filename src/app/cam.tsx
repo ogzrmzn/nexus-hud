@@ -7,8 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { measureNx, NxNumber } from '@/components/nexus/NxNumber';
 import { DimOverlay, HudDrawer } from '@/components/nexus/HudDrawer';
 import { HudHeader } from '@/components/nexus/HudHeader';
+import { LiveElapsed } from '@/components/nexus/Live';
 import { HudButton, NxLabel } from '@/components/nexus/primitives';
-import { clockDuration, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
+import { distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
 import { alpha } from '@/features/nexus/themes';
 import { useHudSystem } from '@/features/nexus/useHudSystem';
 import { useNexus, useRememberPosition } from '@/features/nexus/useNexus';
@@ -136,7 +137,7 @@ export default function Windshield() {
             ) : (
               <View />
             )}
-            {showTime ? <NxNumber text={fixed ? clockDuration(gps.now - gps.trip.startedAt) : '--'} height={bigAux} color={pal.text} style={glyph} weightScale={1.25} /> : null}
+            {showTime ? <LiveElapsed startedAt={gps.trip.startedAt} active={fixed} height={bigAux} color={pal.text} glyph={glyph} weightScale={1.25} /> : null}
           </View>
         ) : null}
       </View>

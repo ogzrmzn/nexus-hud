@@ -9,9 +9,10 @@ import { GAUGE_ASPECT, Gauge } from '@/components/nexus/Gauges';
 import { CompassDial, GpsScan, SignalAlert } from '@/components/nexus/Instruments';
 import { DimOverlay, HudDrawer } from '@/components/nexus/HudDrawer';
 import { HudHeader } from '@/components/nexus/HudHeader';
+import { LiveElapsedCell } from '@/components/nexus/Live';
 import { DataCell, HudButton, NxIcon, NxLabel } from '@/components/nexus/primitives';
 import { avgKmh } from '@/features/nexus/trip';
-import { clockDuration, distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
+import { distanceText, distUnitLabel, gaugeMax, toUnit, unitLabel } from '@/features/nexus/format';
 import { alpha, type NexusPalette } from '@/features/nexus/themes';
 import { useHudSystem } from '@/features/nexus/useHudSystem';
 import { useNexus, useRememberPosition } from '@/features/nexus/useNexus';
@@ -73,7 +74,6 @@ export default function Cockpit() {
   const moving = (gps.speedKmh ?? 0) > LOCK_KMH;
   const st = STATUS_TEXT[gps.status];
   const fixed = gps.lastFixAt != null;
-  const elapsed = gps.now - gps.trip.startedAt;
 
   // Hız uyarısı: ekran kenarı 3 kez parlar + titreşim
   const edge = useSharedValue(0);
@@ -89,13 +89,17 @@ export default function Cockpit() {
 
   const cellSize = Math.max(18, Math.min(34, Math.min(width, height) * 0.058));
   const cells = [
-    w.tripTime && { k: 'sure', label: 'SÜRE', value: fixed ? clockDuration(elapsed) : '--', icon: 'timer-outline' },
+    w.tripTime && { k: 'sure', label: 'SÜRE', value: '', icon: 'timer-outline' },
     w.avg && { k: 'ort', label: 'ORT. HIZ', value: fixed ? String(Math.round(toUnit(avgKmh(gps.trip), nx.unit))) : '--', unit: unitL, icon: 'chart-bell-curve-cumulative' },
     w.max && { k: 'maks', label: 'MAKS', value: fixed ? String(Math.round(toUnit(gps.maxKmh, nx.unit))) : '--', unit: unitL, icon: 'arrow-collapse-up' },
     w.distance && { k: 'mesafe', label: 'MESAFE', value: fixed ? distanceText(gps.trip.distanceM, nx.unit) : '--', unit: distUnitLabel(nx.unit), icon: 'map-marker-distance' },
   ].filter(Boolean) as { k: string; label: string; value: string; unit?: string; icon: string }[];
 
-  const cell = (c: (typeof cells)[number], size = cellSize, align: 'flex-start' | 'center' | 'flex-end' = 'flex-start') => (
+  const cell = (c: (typeof cells)[number], size = cellSize, align: 'flex-start' | 'center' | 'flex-end' = 'flex-start') =>
+    // Süre kendi zamanlayıcısıyla güncellenir; ekranın geri kalanı her saniye yeniden çizilmez
+    c.k === 'sure' ? (
+      <LiveElapsedCell key="sure" startedAt={gps.trip.startedAt} active={fixed} pal={pal} glyph={theme.glyph === 'hairline' ? 'hairline' : 'mono'} size={size} align={align} />
+    ) : (
     <DataCell key={c.k} label={c.label} value={c.value} unit={c.unit} pal={pal} glyph={theme.glyph === 'hairline' ? 'hairline' : 'mono'} size={size} align={align} icon={c.icon} />
   );
 
@@ -167,7 +171,7 @@ export default function Cockpit() {
 
   const alert =
     gps.status === 'kayip' || gps.status === 'zayif' ? (
-      <SignalAlert pal={pal} title={st.title} detail={gps.status === 'kayip' && gps.lastFixAt ? `Son veri ${Math.round((gps.now - gps.lastFixAt) / 1000)} sn önce · hız gösterilmiyor` : st.detail} reduced={reduced} />
+      <SignalAlert pal={pal} title={st.title} detail={st.detail} reduced={reduced} />
     ) : gps.status === 'demo' ? (
       <SignalAlert pal={pal} title="DEMO VERİSİ" detail="Göstergeler gerçek hız değil · Ayarlar'dan kapatın" reduced />
     ) : null;
